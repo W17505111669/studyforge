@@ -5,7 +5,7 @@ WORKDIR /app/web
 
 # 先复制依赖文件，利用 Docker 缓存层
 COPY web/package.json web/package-lock.json ./
-RUN npm ci --silent
+RUN npm install --silent
 
 # 复制前端源码并构建
 COPY web/ ./
