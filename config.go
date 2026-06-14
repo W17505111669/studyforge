@@ -118,6 +118,12 @@ func (c *Config) applyEnvOverrides() {
 			c.Server.Port = n
 		}
 	}
+	// Railway / Render 等平台通过 PORT 环境变量分配端口
+	if v := os.Getenv("PORT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			c.Server.Port = n
+		}
+	}
 	if v := os.Getenv("SERVER_HOST"); v != "" {
 		c.Server.Host = v
 	}
