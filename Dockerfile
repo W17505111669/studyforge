@@ -5,16 +5,19 @@ WORKDIR /app/web
 
 # 先复制依赖文件，利用 Docker 缓存层
 COPY web/package.json web/package-lock.json ./
-RUN npm install --silent
+RUN npm install
 
 # 复制前端源码并构建
 COPY web/ ./
 RUN npm run build
 
 # ========== 阶段 2：编译 Go 后端 ==========
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
+
+# 安装 CGO 依赖（go-sqlite3 需要 C 编译器）
+RUN apk add --no-cache gcc musl-dev
 
 # 先复制依赖文件，利用 Docker 缓存层
 COPY go.mod go.sum ./
@@ -26,14 +29,14 @@ COPY . .
 # 从前端构建阶段复制产物（使 Go 阶段能打包 web/dist）
 COPY --from=frontend /app/web/dist ./web/dist
 
-# 编译（CGO_ENABLED=0 生成静态二进制）
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o studyforge .
+# 编译（启用 CGO 以支持 go-sqlite3）
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o studyforge .
 
 # ========== 阶段 3：运行时 ==========
 FROM alpine:3.19
 
-# 安装 CA 证书（HTTPS 请求需要）和时区数据
-RUN apk --no-cache add ca-certificates tzdata
+# 安装 CA 证书（HTTPS 请求需要）、时区数据和 libc 兼容库（CGO 二进制需要）
+RUN apk --no-cache add ca-certificates tzdata libc6-compat
 
 # 设置时区为上海
 ENV TZ=Asia/Shanghai
