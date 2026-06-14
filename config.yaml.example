@@ -1,0 +1,38 @@
+# ============================================================
+# StudyForge Pro 配置文件
+# ============================================================
+# 复制此文件为 config.yaml 并填入真实值，或通过环境变量设置
+# 环境变量优先级高于此文件，详见 .env.example
+# 可通过 CONFIG_PATH 环境变量指定此文件的路径
+# ============================================================
+
+server:
+  port: 8080        # 环境变量: SERVER_PORT
+  host: "0.0.0.0"   # 环境变量: SERVER_HOST
+
+database:
+  path: "./data/studyforge.db"  # 环境变量: DB_PATH
+
+jwt:
+  secret: ""            # 环境变量: JWT_SECRET（必填）
+  expire_hours: 72      # 环境变量: JWT_EXPIRE_HOURS
+
+# 通义千问 API 配置（也兼容 OpenAI 兼容接口）
+llm:
+  api_key: ""           # 环境变量: LLM_API_KEY（必填）
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 环境变量: LLM_BASE_URL
+  model: "qwen-plus"    # 环境变量: LLM_MODEL
+  embedding_model: "text-embedding-v3"  # 环境变量: LLM_EMBEDDING_MODEL
+
+# Qdrant 向量数据库
+qdrant:
+  host: "localhost"     # 环境变量: QDRANT_HOST
+  port: 6333            # 环境变量: QDRANT_PORT
+  collection: "studyforge_docs"  # 环境变量: QDRANT_COLLECTION
+  vector_size: 1024     # 环境变量: QDRANT_VECTOR_SIZE
+
+# RAG 检索增强生成
+rag:
+  chunk_size: 400       # 环境变量: RAG_CHUNK_SIZE
+  chunk_overlap: 50     # 环境变量: RAG_CHUNK_OVERLAP
+  top_k: 5              # 环境变量: RAG_TOP_K

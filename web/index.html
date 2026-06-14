@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudyForge Pro - AI 智能学习平台</title>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="description" content="AI 驱动的智能学习平台：上传材料、自动生成知识卡片与测验、对话式学习" />
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Apple PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="StudyForge" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      // Service Worker 注册（仅生产环境）
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            console.log('[SW] 注册成功, scope:', reg.scope)
+            // 检测更新
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                  // 新版本就绪，通知用户刷新
+                  if (confirm('StudyForge Pro 有新版本可用，是否立即更新？')) {
+                    window.location.reload()
+                  }
+                }
+              })
+            })
+          }).catch((err) => {
+            console.log('[SW] 注册失败:', err)
+          })
+        })
+      }
+    </script>
+  </body>
+</html>

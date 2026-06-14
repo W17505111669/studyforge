@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # StudyForge Pro 应用
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LLM_API_KEY=${LLM_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+    depends_on:
+      - qdrant
+    volumes:
+      - app_data:/data
+    restart: unless-stopped
+
+  # Qdrant 向量数据库
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    ports:
+      - "6333:6333"
+      - "6334:6334"  # gRPC 端口
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  app_data:
+    driver: local
+  qdrant_data:
+    driver: local
