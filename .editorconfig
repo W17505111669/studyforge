@@ -1,0 +1,25 @@
+# EditorConfig - https://editorconfig.org
+# Ensures consistent formatting across editors and IDEs
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{go,mod,sum}]
+indent_style = tab
+indent_size = 4
+
+[*.{yaml,yml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
