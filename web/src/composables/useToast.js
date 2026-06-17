@@ -14,11 +14,11 @@ export function useToast() {
   }
 
   function removeToast(id) {
-    const idx = toasts.findIndex(t => t.id === id)
+    const idx = toasts.findIndex((t) => t.id === id)
     if (idx !== -1) {
       toasts[idx].visible = false
       setTimeout(() => {
-        const i = toasts.findIndex(t => t.id === id)
+        const i = toasts.findIndex((t) => t.id === id)
         if (i !== -1) toasts.splice(i, 1)
       }, 300)
     }
@@ -30,7 +30,7 @@ export function useToast() {
     error: (msg, dur) => addToast(msg, 'error', dur),
     warning: (msg, dur) => addToast(msg, 'warning', dur),
     info: (msg, dur) => addToast(msg, 'info', dur),
-    remove: removeToast,
+    remove: removeToast
   }
 }
 

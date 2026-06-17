@@ -17,6 +17,8 @@ type Material struct {
 	SourceURL   string    `json:"source_url" gorm:"size:500"`  // 来源 URL（如有）
 	Status      string    `json:"status" gorm:"size:20;default:'pending'"` // pending, analyzing, completed, failed
 	Tags        string    `json:"tags" gorm:"size:500"` // 自定义标签，逗号分隔（如 "编程,Go,并发"）
+	IsPublic    bool      `json:"is_public" gorm:"default:false"` // 是否公开到市场
+	ShareCode   string    `json:"share_code,omitempty" gorm:"size:32;index;default:''"` // 分享码（公开时生成，非空时唯一）
 	AnalyzedAt  *time.Time `json:"analyzed_at"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

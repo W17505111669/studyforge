@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 const isDark = ref(false)
 let initialized = false
@@ -56,6 +56,6 @@ setupMediaListener()
 export function useDarkMode() {
   return {
     isDark,
-    toggleDarkMode,
+    toggleDarkMode
   }
 }

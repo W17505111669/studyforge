@@ -16,16 +16,18 @@ import ErrorBoundary from './components/ErrorBoundary.vue'
 import { useDarkMode } from './composables/useDarkMode'
 
 // 初始化时从 localStorage 恢复登录状态
-const auth = useAuthStore()
+const _auth = useAuthStore()
 
 // 初始化暗色模式（从 localStorage 恢复或跟随系统）
-const { isDark } = useDarkMode()
+const { isDark: _isDark } = useDarkMode()
 </script>
 
 <style>
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .fade-slide-enter-from {

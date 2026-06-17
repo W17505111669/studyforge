@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -141,7 +143,20 @@ func csvEscape(s string) string {
 }
 
 // ListCards 获取用户的所有知识卡片（支持分页）
-// GET /api/cards?material_id=xxx&difficulty=xxx&due=true&bookmarked=true&limit=20&offset=0
+//
+// @Summary 卡片列表
+// @Description 分页获取知识卡片，支持按材料、难度、待复习状态、书签过滤
+// @Tags 知识卡片
+// @Produce json
+// @Param limit query int false "每页条数（默认 20）"
+// @Param offset query int false "偏移量"
+// @Param material_id query string false "按材料 ID 过滤"
+// @Param difficulty query string false "按难度过滤（easy/medium/hard）"
+// @Param due query bool false "true 时只返回待复习卡片"
+// @Param bookmarked query bool false "true 时只返回已书签卡片"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "卡片列表"
+// @Router /cards [get]
 func (h *Handler) ListCards(c *gin.Context) {
 	userID := c.GetString("userID")
 	materialID := c.Query("material_id")
@@ -168,13 +183,215 @@ func (h *Handler) ListCards(c *gin.Context) {
 	var total int64
 	query.Model(&model.Card{}).Count(&total)
 
+	// 动态排序
+	sortBy := c.DefaultQuery("sort", "created_at")
+	var orderClause string
+	switch sortBy {
+	case "due_date":
+		orderClause = "CASE WHEN next_review_at IS NULL THEN 0 ELSE 1 END, next_review_at ASC"
+	case "difficulty":
+		orderClause = "ease_factor ASC"
+	default:
+		orderClause = "created_at DESC"
+	}
+
 	var cards []model.Card
-	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&cards).Error; err != nil {
+	if err := query.Order(orderClause).Limit(limit).Offset(offset).Find(&cards).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询卡片失败"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": cards, "total": total, "limit": limit, "offset": offset})
+}
+
+// DueCardItem 带优先级评分的卡片响应
+type DueCardItem struct {
+	model.Card
+	PriorityScore   int      `json:"priority_score"`
+	PriorityReasons []string `json:"priority_reasons"`
+	PriorityLevel   string   `json:"priority_level"`
+}
+
+// GetDueCards 获取到期卡片（含 5 维 AI 优先级评分）
+// GET /api/cards/due?sort=priority|due_date|difficulty&limit=200&offset=0
+func (h *Handler) GetDueCards(c *gin.Context) {
+	userID := c.GetString("userID")
+	sortBy := c.DefaultQuery("sort", "priority")
+	limit, offset := parsePagination(c)
+	if limit > 500 {
+		limit = 500
+	}
+	if c.Query("limit") == "" {
+		limit = 200 // 复习页默认 200
+	}
+
+	now := time.Now()
+
+	// 查询所有到期卡片（next_review_at IS NULL 或 <= now）
+	var dueCards []model.Card
+	if err := h.DB.Where("user_id = ? AND (next_review_at IS NULL OR next_review_at <= ?)", userID, now).
+		Find(&dueCards).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询卡片失败"})
+		return
+	}
+
+	total := len(dueCards)
+
+	// 批量查询各材料的答题准确率（避免 N+1）
+	materialIDs := make([]string, 0)
+	for _, card := range dueCards {
+		materialIDs = append(materialIDs, card.MaterialID)
+	}
+
+	accuracyMap := make(map[string]float64) // material_id → 正确率 0.0~1.0
+	if len(materialIDs) > 0 {
+		type accRow struct {
+			MaterialID string
+			Total      int
+			Correct    int
+		}
+		var rows []accRow
+		h.DB.Table("quiz_attempts").
+			Select("quizzes.material_id AS material_id, COUNT(*) AS total, SUM(CASE WHEN quiz_attempts.is_correct = 1 THEN 1 ELSE 0 END) AS correct").
+			Joins("JOIN quizzes ON quizzes.id = quiz_attempts.quiz_id").
+			Where("quiz_attempts.user_id = ? AND quizzes.material_id IN ?", userID, materialIDs).
+			Group("quizzes.material_id").
+			Scan(&rows)
+		for _, r := range rows {
+			if r.Total > 0 {
+				accuracyMap[r.MaterialID] = float64(r.Correct) / float64(r.Total)
+			}
+		}
+	}
+
+	// 计算 5 维优先级评分
+	items := make([]DueCardItem, 0, total)
+	for _, card := range dueCards {
+		score := 0
+		reasons := make([]string, 0, 5)
+
+		// 维度 1: 过期分数 (0-30)
+		if card.NextReviewAt == nil {
+			score += 15
+			reasons = append(reasons, "新卡片未复习")
+		} else {
+			overdueDays := float64(now.Sub(*card.NextReviewAt).Hours() / 24)
+			if overdueDays > 0 {
+				overdueScore := int(math.Min(overdueDays*3, 30))
+				score += overdueScore
+				if overdueScore > 10 {
+					reasons = append(reasons, fmt.Sprintf("到期%d天", int(overdueDays)))
+				}
+			}
+		}
+
+		// 维度 2: 难度分数 (0-25) — ease_factor 越低越难
+		diffScore := int(math.Max(0, math.Min((2.5-card.EaseFactor)*20, 25)))
+		score += diffScore
+		if diffScore > 12 {
+			reasons = append(reasons, "难度较高")
+		}
+
+		// 维度 3: 新鲜度分数 (0-15) — 复习次数越少越高
+		noveltyScore := 15 - card.ReviewCount*2
+		if noveltyScore < 0 {
+			noveltyScore = 0
+		}
+		score += noveltyScore
+		if noveltyScore > 8 {
+			reasons = append(reasons, "复习次数少")
+		}
+
+		// 维度 4: 准确率分数 (0-20) — 准确率越低越需要复习
+		if acc, ok := accuracyMap[card.MaterialID]; ok {
+			accScore := int((1 - acc) * 20)
+			score += accScore
+			if accScore > 10 {
+				reasons = append(reasons, "答题正确率低")
+			}
+		}
+
+		// 维度 5: 书签加分 (0-10)
+		if card.IsBookmarked {
+			score += 10
+			reasons = append(reasons, "已书签")
+		}
+
+		// 上限 100
+		if score > 100 {
+			score = 100
+		}
+
+		// 优先级等级
+		level := "low"
+		if score >= 60 {
+			level = "high"
+		} else if score >= 30 {
+			level = "medium"
+		}
+
+		if len(reasons) == 0 {
+			reasons = append(reasons, "综合排序")
+		}
+
+		items = append(items, DueCardItem{
+			Card:            card,
+			PriorityScore:   score,
+			PriorityReasons: reasons,
+			PriorityLevel:   level,
+		})
+	}
+
+	// 排序
+	switch sortBy {
+	case "priority":
+		sort.SliceStable(items, func(i, j int) bool {
+			return items[i].PriorityScore > items[j].PriorityScore
+		})
+	case "due_date":
+		sort.SliceStable(items, func(i, j int) bool {
+			// 新卡片（无 next_review_at）排最前
+			if items[i].NextReviewAt == nil && items[j].NextReviewAt != nil {
+				return true
+			}
+			if items[i].NextReviewAt != nil && items[j].NextReviewAt == nil {
+				return false
+			}
+			if items[i].NextReviewAt != nil && items[j].NextReviewAt != nil {
+				return items[i].NextReviewAt.Before(*items[j].NextReviewAt)
+			}
+			return false
+		})
+	case "difficulty":
+		sort.SliceStable(items, func(i, j int) bool {
+			return items[i].EaseFactor < items[j].EaseFactor
+		})
+	}
+
+	// 分页
+	start := offset
+	if start > len(items) {
+		start = len(items)
+	}
+	end := start + limit
+	if end > len(items) {
+		end = len(items)
+	}
+	paged := items[start:end]
+
+	// 统计分布
+	dist := map[string]int{"high": 0, "medium": 0, "low": 0}
+	for _, item := range items {
+		dist[item.PriorityLevel]++
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        paged,
+		"total":       total,
+		"limit":       limit,
+		"offset":      offset,
+		"distribution": dist,
+	})
 }
 
 // GetCard 获取单个卡片详情
@@ -198,7 +415,18 @@ type ReviewCardRequest struct {
 }
 
 // ReviewCard 提交卡片复习结果（简化 SM-2 间隔重复算法）
-// POST /api/cards/:id/review
+//
+// @Summary 复习卡片（SM-2）
+// @Description 提交复习结果，基于 SM-2 算法更新间隔天数和难度因子
+// @Tags 知识卡片
+// @Accept json
+// @Produce json
+// @Param id path string true "卡片 ID"
+// @Param request body ReviewCardRequest true "复习结果"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "复习结果"
+// @Failure 404 {object} map[string]interface{} "卡片不存在"
+// @Router /cards/{id}/review [post]
 func (h *Handler) ReviewCard(c *gin.Context) {
 	userID := c.GetString("userID")
 	cardID := c.Param("id")
@@ -224,6 +452,12 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 	card.ApplyReview(req.Result)
 
 	h.DB.Save(&card)
+
+	// 异步更新学习目标进度（复习卡片 +1）
+	go h.IncrementGoalProgress(userID, "review_cards", 1)
+
+	// 异步更新打卡活动（卡片复习 +1）
+	go h.IncrementStreakActivity(userID, "per_day_cards")
 
 	c.JSON(http.StatusOK, gin.H{
 		"card_id":        card.ID,
@@ -291,7 +525,19 @@ func (h *Handler) UpdateCardNote(c *gin.Context) {
 }
 
 // ListQuizzes 获取练习题列表（支持分页+智能推荐模式）
-// GET /api/quizzes?material_id=xxx&difficulty=xxx&recommended=true&limit=20&offset=0
+//
+// @Summary 题目列表
+// @Description 分页获取练习题，支持按材料和难度过滤，可选智能推荐模式
+// @Tags 练习题
+// @Produce json
+// @Param limit query int false "每页条数（默认 20）"
+// @Param offset query int false "偏移量"
+// @Param material_id query string false "按材料 ID 过滤"
+// @Param difficulty query string false "按难度过滤"
+// @Param recommended query bool false "true 时启用智能推荐模式"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "题目列表"
+// @Router /quizzes [get]
 func (h *Handler) ListQuizzes(c *gin.Context) {
 	userID := c.GetString("userID")
 	materialID := c.Query("material_id")
@@ -418,7 +664,18 @@ func (h *Handler) GetDifficultyLevel(c *gin.Context) {
 }
 
 // AnswerQuiz 提交答案
-// POST /api/quizzes/:id/answer
+//
+// @Summary 提交答案
+// @Description 提交练习题答案，自动判断正确性并记录答题记录
+// @Tags 练习题
+// @Accept json
+// @Produce json
+// @Param id path string true "题目 ID"
+// @Param request body model.AnswerRequest true "用户答案"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "答题结果"
+// @Failure 404 {object} map[string]interface{} "题目不存在"
+// @Router /quizzes/{id}/answer [post]
 func (h *Handler) AnswerQuiz(c *gin.Context) {
 	userID := c.GetString("userID")
 	quizID := c.Param("id")
@@ -477,6 +734,12 @@ func (h *Handler) AnswerQuiz(c *gin.Context) {
 		"answer":      quiz.Answer,
 		"explanation": quiz.Explanation,
 	}
+
+	// 异步更新学习目标进度（完成练习 +1）
+	go h.IncrementGoalProgress(userID, "complete_quizzes", 1)
+
+	// 异步更新打卡活动（练习题 +1）
+	go h.IncrementStreakActivity(userID, "per_day_quizzes")
 
 	// 答错时附带第1级提示（如果存在）
 	if !isCorrect && quiz.Hint1 != "" {
@@ -613,7 +876,17 @@ type ChatRequest struct {
 }
 
 // Chat 多轮对话接口（支持 Function Calling + RAG 检索增强）
-// POST /api/chat
+//
+// @Summary 对话（非流式）
+// @Description 发送消息并获取 AI 回复，支持 Function Calling 工具调用和 RAG 检索增强
+// @Tags AI 对话
+// @Accept json
+// @Produce json
+// @Param request body ChatRequest true "对话请求"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "AI 回复"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Router /chat [post]
 func (h *Handler) Chat(c *gin.Context) {
 	userID := c.GetString("userID")
 
@@ -652,6 +925,9 @@ func (h *Handler) Chat(c *gin.Context) {
 		Role:           "user",
 		Content:        req.Message,
 	})
+
+	// 异步更新打卡活动（对话消息 +1）
+	go h.IncrementStreakActivity(userID, "per_day_messages")
 
 	// ===== 1. 获取/创建用户的会话记忆 =====
 	mem := h.getOrCreateMemory(convID)
@@ -824,6 +1100,9 @@ func (h *Handler) ChatStream(c *gin.Context) {
 		Role:           "user",
 		Content:        message,
 	})
+
+	// 异步更新打卡活动（对话消息 +1）
+	go h.IncrementStreakActivity(userID, "per_day_messages")
 
 	// ===== 1. 构建上下文（与 Chat 相同逻辑）=====
 	mem := h.getOrCreateMemory(convID)
@@ -1289,109 +1568,261 @@ func (h *Handler) GetAllKnowledgeGraphs(c *gin.Context) {
 
 // SearchResultItem 单条搜索结果
 type SearchResultItem struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"`          // "material", "card", "quiz"
-	Title       string `json:"title"`         // 主标题
-	Subtitle    string `json:"subtitle"`      // 副标题/摘要
-	MaterialID  string `json:"material_id"`   // 关联材料 ID（卡片和题目用）
+	ID            string `json:"id"`
+	Type          string `json:"type"`          // "material", "card", "quiz"
+	Title         string `json:"title"`         // 主标题
+	Subtitle      string `json:"subtitle"`      // 副标题/摘要
+	MaterialID    string `json:"material_id"`   // 关联材料 ID（卡片和题目用）
 	MaterialTitle string `json:"material_title,omitempty"` // 关联材料标题
+	Relevance     int    `json:"relevance"`     // 相关度分数（100=精确匹配, 50=包含, 10=其他）
 }
 
 // GlobalSearch 全局搜索（材料 + 卡片 + 练习题）
-// GET /api/search?q=关键词
+//
+// @Summary 全局搜索
+// @Description 跨材料、卡片、练习题的全文模糊搜索，支持多条件过滤，每类最多返回 20 条
+// @Tags 搜索
+// @Produce json
+// @Param q query string false "搜索关键词"
+// @Param type query string false "限定类型（material/card/quiz）"
+// @Param date_from query string false "时间范围开始"
+// @Param date_to query string false "时间范围结束"
+// @Param difficulty query string false "难度过滤"
+// @Param tags query string false "标签过滤（逗号分隔）"
+// @Param status query string false "材料状态"
+// @Param material_id query string false "限定材料 ID"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "搜索结果"
+// @Router /search [get]
 func (h *Handler) GlobalSearch(c *gin.Context) {
 	userID := c.GetString("userID")
 	q := strings.TrimSpace(c.Query("q"))
 
-	if q == "" {
+	// 解析高级过滤参数
+	filterType := strings.TrimSpace(c.Query("type"))     // material,card,quiz（逗号分隔）
+	dateFrom := strings.TrimSpace(c.Query("date_from"))   // 2006-01-02
+	dateTo := strings.TrimSpace(c.Query("date_to"))       // 2006-01-02
+	difficulty := strings.TrimSpace(c.Query("difficulty")) // easy,medium,hard
+	tagsFilter := strings.TrimSpace(c.Query("tags"))      // 逗号分隔标签
+	statusFilter := strings.TrimSpace(c.Query("status"))  // pending,completed,failed,analyzing
+	materialIDFilter := strings.TrimSpace(c.Query("material_id"))
+
+	// 构建类型过滤集合
+	typeSet := map[string]bool{}
+	if filterType != "" {
+		for _, t := range strings.Split(filterType, ",") {
+			t = strings.TrimSpace(t)
+			if t != "" {
+				typeSet[t] = true
+			}
+		}
+	}
+	searchMaterial := len(typeSet) == 0 || typeSet["material"]
+	searchCard := len(typeSet) == 0 || typeSet["card"]
+	searchQuiz := len(typeSet) == 0 || typeSet["quiz"]
+
+	// 解析日期范围
+	var dateFromTime, dateToTime time.Time
+	if dateFrom != "" {
+		if t, err := time.Parse("2006-01-02", dateFrom); err == nil {
+			dateFromTime = t
+		}
+	}
+	if dateTo != "" {
+		if t, err := time.Parse("2006-01-02", dateTo); err == nil {
+			dateToTime = t.Add(24*time.Hour - time.Second) // 包含当天全天
+		}
+	}
+
+	// 解析标签列表
+	var tagList []string
+	if tagsFilter != "" {
+		for _, tag := range strings.Split(tagsFilter, ",") {
+			tag = strings.TrimSpace(tag)
+			if tag != "" {
+				tagList = append(tagList, tag)
+			}
+		}
+	}
+
+	if q == "" && len(typeSet) == 0 && len(tagList) == 0 && statusFilter == "" && materialIDFilter == "" {
 		c.JSON(http.StatusOK, gin.H{"total": 0, "query": "", "results": []interface{}{}})
 		return
 	}
 
 	like := "%" + q + "%"
+	qLower := strings.ToLower(q)
 	var results []SearchResultItem
 
 	// 搜索材料（title + content + tags）
-	var materials []model.Material
-	h.DB.Select("id, title, content_type, status, tags, created_at").
-		Where("user_id = ? AND (title LIKE ? OR content LIKE ? OR tags LIKE ?)", userID, like, like, like).
-		Order("created_at DESC").Limit(8).Find(&materials)
-	for _, m := range materials {
-		subtitle := "类型: " + m.ContentType + " | 状态: " + m.Status
-		if m.Tags != "" {
-			subtitle += " | 标签: " + m.Tags
+	if searchMaterial {
+		matQuery := h.DB.Where("user_id = ?", userID)
+		if q != "" {
+			matQuery = matQuery.Where("(title LIKE ? OR content LIKE ? OR tags LIKE ?)", like, like, like)
 		}
-		results = append(results, SearchResultItem{
-			ID: m.ID, Type: "material", Title: m.Title, Subtitle: subtitle, MaterialID: m.ID,
-		})
+		if !dateFromTime.IsZero() {
+			matQuery = matQuery.Where("created_at >= ?", dateFromTime)
+		}
+		if !dateToTime.IsZero() {
+			matQuery = matQuery.Where("created_at <= ?", dateToTime)
+		}
+		if statusFilter != "" {
+			matQuery = matQuery.Where("status = ?", statusFilter)
+		}
+		for _, tag := range tagList {
+			matQuery = matQuery.Where("tags LIKE ?", "%"+tag+"%")
+		}
+		var materials []model.Material
+		matQuery.Select("id, title, content_type, status, tags, created_at").
+			Order("created_at DESC").Limit(20).Find(&materials)
+		for _, m := range materials {
+			subtitle := "类型: " + m.ContentType + " | 状态: " + m.Status
+			if m.Tags != "" {
+				subtitle += " | 标签: " + m.Tags
+			}
+			// 相关度分数：标题精确匹配 > 标题包含 > 内容包含
+			score := 0
+			if qLower != "" {
+				titleLower := strings.ToLower(m.Title)
+				if titleLower == qLower {
+					score = 100
+				} else if strings.Contains(titleLower, qLower) {
+					score = 50
+				} else {
+					score = 10
+				}
+			}
+			results = append(results, SearchResultItem{
+				ID: m.ID, Type: "material", Title: m.Title, Subtitle: subtitle, MaterialID: m.ID,
+				Relevance: score,
+			})
+		}
 	}
 
 	// 搜索卡片（concept + detail + tags + memory_tip）
-	var cards []model.Card
-	h.DB.Where("user_id = ? AND (concept LIKE ? OR detail LIKE ? OR tags LIKE ? OR memory_tip LIKE ?)",
-		userID, like, like, like, like).
-		Order("created_at DESC").Limit(8).Find(&cards)
+	if searchCard {
+		cardQuery := h.DB.Where("user_id = ?", userID)
+		if q != "" {
+			cardQuery = cardQuery.Where("(concept LIKE ? OR detail LIKE ? OR tags LIKE ? OR memory_tip LIKE ?)",
+				like, like, like, like)
+		}
+		if !dateFromTime.IsZero() {
+			cardQuery = cardQuery.Where("created_at >= ?", dateFromTime)
+		}
+		if !dateToTime.IsZero() {
+			cardQuery = cardQuery.Where("created_at <= ?", dateToTime)
+		}
+		if materialIDFilter != "" {
+			cardQuery = cardQuery.Where("material_id = ?", materialIDFilter)
+		}
+		for _, tag := range tagList {
+			cardQuery = cardQuery.Where("tags LIKE ?", "%"+tag+"%")
+		}
+		var cards []model.Card
+		cardQuery.Order("created_at DESC").Limit(20).Find(&cards)
 
-	// 批量查询卡片关联的材料标题
-	materialTitles := map[string]string{}
-	if len(cards) > 0 {
-		var matIDs []string
+		// 批量查询卡片关联的材料标题
+		materialTitles := map[string]string{}
+		if len(cards) > 0 {
+			var matIDs []string
+			for _, card := range cards {
+				matIDs = append(matIDs, card.MaterialID)
+			}
+			var mats []model.Material
+			h.DB.Select("id, title").Where("id IN ?", matIDs).Find(&mats)
+			for _, m := range mats {
+				materialTitles[m.ID] = m.Title
+			}
+		}
 		for _, card := range cards {
-			matIDs = append(matIDs, card.MaterialID)
-		}
-		var mats []model.Material
-		h.DB.Select("id, title").Where("id IN ?", matIDs).Find(&mats)
-		for _, m := range mats {
-			materialTitles[m.ID] = m.Title
+			subtitle := card.Detail
+			if len([]rune(subtitle)) > 60 {
+				subtitle = string([]rune(subtitle)[:60]) + "..."
+			}
+			if subtitle == "" {
+				subtitle = card.Tags
+			}
+			score := 0
+			if qLower != "" {
+				conceptLower := strings.ToLower(card.Concept)
+				if conceptLower == qLower {
+					score = 100
+				} else if strings.Contains(conceptLower, qLower) {
+					score = 50
+				} else {
+					score = 10
+				}
+			}
+			results = append(results, SearchResultItem{
+				ID: card.ID, Type: "card", Title: card.Concept, Subtitle: subtitle,
+				MaterialID: card.MaterialID, MaterialTitle: materialTitles[card.MaterialID],
+				Relevance: score,
+			})
 		}
 	}
-	for _, card := range cards {
-		subtitle := card.Detail
-		if len([]rune(subtitle)) > 60 {
-			subtitle = string([]rune(subtitle)[:60]) + "..."
-		}
-		if subtitle == "" {
-			subtitle = card.Tags
-		}
-		results = append(results, SearchResultItem{
-			ID: card.ID, Type: "card", Title: card.Concept, Subtitle: subtitle,
-			MaterialID: card.MaterialID, MaterialTitle: materialTitles[card.MaterialID],
-		})
-	}
 
-	// 搜索练习题（question）
-	var quizzes []model.Quiz
-	h.DB.Where("user_id = ? AND question LIKE ?", userID, like).
-		Order("created_at DESC").Limit(8).Find(&quizzes)
-
-	// 批量查询题目关联的材料标题
-	if len(quizzes) > 0 {
-		var matIDs []string
-		for _, quiz := range quizzes {
-			matIDs = append(matIDs, quiz.MaterialID)
+	// 搜索练习题（question + explanation）
+	if searchQuiz {
+		quizQuery := h.DB.Where("user_id = ?", userID)
+		if q != "" {
+			quizQuery = quizQuery.Where("(question LIKE ? OR explanation LIKE ?)", like, like)
 		}
-		for _, id := range matIDs {
-			if _, exists := materialTitles[id]; !exists {
-				var m model.Material
-				if h.DB.Select("id, title").Where("id = ?", id).First(&m).Error == nil {
-					materialTitles[id] = m.Title
+		if !dateFromTime.IsZero() {
+			quizQuery = quizQuery.Where("created_at >= ?", dateFromTime)
+		}
+		if !dateToTime.IsZero() {
+			quizQuery = quizQuery.Where("created_at <= ?", dateToTime)
+		}
+		if difficulty != "" {
+			quizQuery = quizQuery.Where("difficulty = ?", difficulty)
+		}
+		if materialIDFilter != "" {
+			quizQuery = quizQuery.Where("material_id = ?", materialIDFilter)
+		}
+		var quizzes []model.Quiz
+		quizQuery.Order("created_at DESC").Limit(20).Find(&quizzes)
+
+		// 批量查询题目关联的材料标题
+		materialTitles2 := map[string]string{}
+		if len(quizzes) > 0 {
+			var matIDs []string
+			for _, quiz := range quizzes {
+				matIDs = append(matIDs, quiz.MaterialID)
+			}
+			if len(matIDs) > 0 {
+				var mats []model.Material
+				h.DB.Select("id, title").Where("id IN ?", matIDs).Find(&mats)
+				for _, m := range mats {
+					materialTitles2[m.ID] = m.Title
 				}
 			}
 		}
-	}
-	for _, quiz := range quizzes {
-		subtitle := quiz.Type + " | " + quiz.Difficulty
-		if quiz.Explanation != "" {
-			exp := quiz.Explanation
-			if len([]rune(exp)) > 40 {
-				exp = string([]rune(exp)[:40]) + "..."
+		for _, quiz := range quizzes {
+			subtitle := quiz.Type + " | " + quiz.Difficulty
+			if quiz.Explanation != "" {
+				exp := quiz.Explanation
+				if len([]rune(exp)) > 40 {
+					exp = string([]rune(exp)[:40]) + "..."
+				}
+				subtitle += " | " + exp
 			}
-			subtitle += " | " + exp
+			score := 0
+			if qLower != "" {
+				questionLower := strings.ToLower(quiz.Question)
+				if questionLower == qLower {
+					score = 100
+				} else if strings.Contains(questionLower, qLower) {
+					score = 50
+				} else {
+					score = 10
+				}
+			}
+			results = append(results, SearchResultItem{
+				ID: quiz.ID, Type: "quiz", Title: quiz.Question, Subtitle: subtitle,
+				MaterialID: quiz.MaterialID, MaterialTitle: materialTitles2[quiz.MaterialID],
+				Relevance: score,
+			})
 		}
-		results = append(results, SearchResultItem{
-			ID: quiz.ID, Type: "quiz", Title: quiz.Question, Subtitle: subtitle,
-			MaterialID: quiz.MaterialID, MaterialTitle: materialTitles[quiz.MaterialID],
-		})
 	}
 
 	// 截断题目主标题（可能很长）
@@ -1400,6 +1831,11 @@ func (h *Handler) GlobalSearch(c *gin.Context) {
 			results[i].Title = string([]rune(results[i].Title)[:80]) + "..."
 		}
 	}
+
+	// 按相关度排序（高到低），同等分数保持原始顺序（稳定排序）
+	sort.SliceStable(results, func(i, j int) bool {
+		return results[i].Relevance > results[j].Relevance
+	})
 
 	if results == nil {
 		results = []SearchResultItem{}
@@ -1415,7 +1851,14 @@ func (h *Handler) GlobalSearch(c *gin.Context) {
 // ==================== 学习统计 ====================
 
 // GetUserStats 获取用户学习统计
-// GET /api/stats
+//
+// @Summary 学习统计
+// @Description 获取用户的学习统计数据（材料数、卡片数、答题数、待复习卡片等）
+// @Tags 学习统计
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "统计数据"
+// @Router /stats [get]
 func (h *Handler) GetUserStats(c *gin.Context) {
 	userID := c.GetString("userID")
 
@@ -1432,12 +1875,24 @@ func (h *Handler) GetUserStats(c *gin.Context) {
 		accuracy = float64(correctCount) / float64(totalAttempts) * 100
 	}
 
+	// 待复习卡片数（next_review_at <= now 或从未复习过的新卡）
+	now := time.Now()
+	var dueCardCount int64
+	h.DB.Model(&model.Card{}).Where("user_id = ? AND (next_review_at IS NULL OR next_review_at <= ?)", userID, now).Count(&dueCardCount)
+
+	// 今日已复习卡片数（last_reviewed_at 在今天范围内）
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	var todayReviewedCount int64
+	h.DB.Model(&model.Card{}).Where("user_id = ? AND last_reviewed_at >= ?", userID, todayStart).Count(&todayReviewedCount)
+
 	c.JSON(http.StatusOK, gin.H{
-		"material_count": materialCount,
-		"card_count":     cardCount,
-		"quiz_count":     quizCount,
-		"total_attempts": totalAttempts,
-		"correct_count":  correctCount,
-		"accuracy":       accuracy,
+		"material_count":       materialCount,
+		"card_count":           cardCount,
+		"quiz_count":           quizCount,
+		"total_attempts":       totalAttempts,
+		"correct_count":        correctCount,
+		"accuracy":             accuracy,
+		"due_card_count":       dueCardCount,
+		"today_reviewed_count": todayReviewedCount,
 	})
 }

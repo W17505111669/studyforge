@@ -1,18 +1,48 @@
 <template>
   <div class="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">上传学习材料</h1>
-    <p class="text-gray-500 dark:text-gray-400 mb-8">上传材料后，4 个 AI Agent 将并行分析，实时生成知识卡片、练习题和知识图谱</p>
+    <p class="text-gray-500 dark:text-gray-400 mb-8">
+      上传材料后，4 个 AI Agent 将并行分析，实时生成知识卡片、练习题和知识图谱
+    </p>
 
     <!-- 上传表单 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8">
-      <form @submit.prevent="handleUpload" class="space-y-4">
+    <div
+      class="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8"
+    >
+      <!-- 离线遮罩 -->
+      <div
+        v-if="!isOnline"
+        class="absolute inset-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center"
+      >
+        <svg
+          class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M18.364 5.636a9 9 0 010 12.728M5.636 5.636a9 9 0 000 12.728"
+          />
+          <line x1="1" y1="1" x2="23" y2="23" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-300">上传功能需要网络连接</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">请恢复网络后使用</p>
+      </div>
 
+      <form class="space-y-4" @submit.prevent="handleUpload">
         <!-- 文件上传区域 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">上传文件</label>
           <div
             class="border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer"
-            :class="dragOver ? 'border-primary-500 bg-primary-50' : 'border-gray-200 dark:border-gray-600 hover:border-primary-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+            :class="
+              dragOver
+                ? 'border-primary-500 bg-primary-50'
+                : 'border-gray-200 dark:border-gray-600 hover:border-primary-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            "
             @dragover.prevent="dragOver = true"
             @dragleave.prevent="dragOver = false"
             @drop.prevent="handleDrop"
@@ -33,41 +63,59 @@
             <div v-else class="flex items-center justify-center gap-3">
               <!-- PDF 文件图标 -->
               <svg v-if="fileType === 'pdf'" class="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none">
-                <rect x="4" y="2" width="32" height="36" rx="4" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
-                <rect x="10" y="16" width="20" height="12" rx="2" fill="#EF4444"/>
+                <rect x="4" y="2" width="32" height="36" rx="4" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5" />
+                <rect x="10" y="16" width="20" height="12" rx="2" fill="#EF4444" />
                 <text x="20" y="25" text-anchor="middle" fill="white" font-size="7" font-weight="bold">PDF</text>
-                <line x1="10" y1="8" x2="24" y2="8" stroke="#FCA5A5" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="10" y1="11" x2="20" y2="11" stroke="#FCA5A5" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="10" y1="8" x2="24" y2="8" stroke="#FCA5A5" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="10" y1="11" x2="20" y2="11" stroke="#FCA5A5" stroke-width="1.5" stroke-linecap="round" />
               </svg>
               <!-- Word 文件图标 -->
-              <svg v-else-if="fileType === 'docx' || fileType === 'doc'" class="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none">
-                <rect x="4" y="2" width="32" height="36" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
-                <rect x="10" y="16" width="20" height="12" rx="2" fill="#3B82F6"/>
+              <svg
+                v-else-if="fileType === 'docx' || fileType === 'doc'"
+                class="w-10 h-10 shrink-0"
+                viewBox="0 0 40 40"
+                fill="none"
+              >
+                <rect x="4" y="2" width="32" height="36" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5" />
+                <rect x="10" y="16" width="20" height="12" rx="2" fill="#3B82F6" />
                 <text x="20" y="25" text-anchor="middle" fill="white" font-size="6.5" font-weight="bold">DOCX</text>
-                <line x1="10" y1="8" x2="24" y2="8" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="10" y1="11" x2="20" y2="11" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="10" y1="8" x2="24" y2="8" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="10" y1="11" x2="20" y2="11" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round" />
               </svg>
               <!-- Markdown 文件图标 -->
-              <svg v-else-if="fileType === 'md' || fileType === 'markdown'" class="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none">
-                <rect x="4" y="2" width="32" height="36" rx="4" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
-                <rect x="8" y="14" width="24" height="14" rx="2" fill="#10B981"/>
+              <svg
+                v-else-if="fileType === 'md' || fileType === 'markdown'"
+                class="w-10 h-10 shrink-0"
+                viewBox="0 0 40 40"
+                fill="none"
+              >
+                <rect x="4" y="2" width="32" height="36" rx="4" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5" />
+                <rect x="8" y="14" width="24" height="14" rx="2" fill="#10B981" />
                 <text x="20" y="24" text-anchor="middle" fill="white" font-size="6" font-weight="bold">MD</text>
-                <path d="M12 8h6M12 11h10" stroke="#6EE7B7" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M12 8h6M12 11h10" stroke="#6EE7B7" stroke-width="1.5" stroke-linecap="round" />
               </svg>
               <!-- 通用文本文件图标 -->
               <svg v-else class="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none">
-                <rect x="4" y="2" width="32" height="36" rx="4" fill="#F3F4F6" stroke="#9CA3AF" stroke-width="1.5"/>
-                <line x1="10" y1="10" x2="30" y2="10" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="10" y1="14" x2="26" y2="14" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="10" y1="18" x2="28" y2="18" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="10" y1="22" x2="22" y2="22" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="10" y1="26" x2="30" y2="26" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="4" y="2" width="32" height="36" rx="4" fill="#F3F4F6" stroke="#9CA3AF" stroke-width="1.5" />
+                <line x1="10" y1="10" x2="30" y2="10" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="10" y1="14" x2="26" y2="14" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="10" y1="18" x2="28" y2="18" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="10" y1="22" x2="22" y2="22" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="10" y1="26" x2="30" y2="26" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" />
               </svg>
               <div class="text-left">
                 <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ fileInfo.filename }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatSize(fileInfo.size) }} · 已提取 {{ form.content.length }} 字</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">
+                  {{ formatSize(fileInfo.size) }} · 已提取 {{ form.content.length }} 字
+                </p>
               </div>
-              <button type="button" @click.stop="clearFile" class="ml-4 text-gray-400 dark:text-gray-500 hover:text-red-500 text-sm">清除</button>
+              <button
+                type="button"
+                class="ml-4 text-gray-400 dark:text-gray-500 hover:text-red-500 text-sm"
+                @click.stop="clearFile"
+              >
+                清除
+              </button>
             </div>
           </div>
           <!-- 上传进度条 -->
@@ -88,7 +136,11 @@
           </div>
           <p v-if="fileSizeWarning" class="text-xs text-amber-500 dark:text-amber-400 mt-1 flex items-center gap-1">
             <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              <path
+                fill-rule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
             </svg>
             {{ fileSizeWarning }}
           </p>
@@ -140,8 +192,8 @@
                   v-for="tag in filteredExistingTags"
                   :key="tag.name"
                   type="button"
-                  @mousedown.prevent="addTagSuggestion(tag.name)"
                   class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center justify-between transition-colors"
+                  @mousedown.prevent="addTagSuggestion(tag.name)"
                 >
                   <span class="text-gray-700 dark:text-gray-300">{{ tag.name }}</span>
                   <span class="text-xs text-gray-400 dark:text-gray-500">{{ tag.count }} 次使用</span>
@@ -157,7 +209,7 @@
               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
             >
               {{ tag }}
-              <button type="button" @click="removeFormTag(idx)" class="hover:text-red-500 transition-colors">×</button>
+              <button type="button" class="hover:text-red-500 transition-colors" @click="removeFormTag(idx)">×</button>
             </span>
           </div>
         </div>
@@ -173,8 +225,17 @@
     </div>
 
     <!-- Agent 并发可视化 -->
-    <AgentFlow v-if="analyzing || agents.some(a => a.done)" :agents="agents" :analyzing="analyzing" :timeline-start="analyzeStartTime" :agent-finish-times="agentFinishTimes" />
-    <div v-if="isPolling" class="mb-4 px-4 py-2 bg-amber-50 dark:bg-gray-700 border border-amber-200 dark:border-gray-600 rounded-lg text-xs text-amber-600 dark:text-gray-300 flex items-center gap-2">
+    <AgentFlow
+      v-if="analyzing || agents.some((a) => a.done)"
+      :agents="agents"
+      :analyzing="analyzing"
+      :timeline-start="analyzeStartTime"
+      :agent-finish-times="agentFinishTimes"
+    />
+    <div
+      v-if="isPolling"
+      class="mb-4 px-4 py-2 bg-amber-50 dark:bg-gray-700 border border-amber-200 dark:border-gray-600 rounded-lg text-xs text-amber-600 dark:text-gray-300 flex items-center gap-2"
+    >
       <span class="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
       WebSocket 已断线，正在通过轮询同步分析进度...
     </div>
@@ -185,42 +246,48 @@
         <h2 class="text-lg font-semibold dark:text-gray-100">已上传材料</h2>
 
         <!-- 全选 checkbox -->
-        <label v-if="materials.length > 0" class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+        <label
+          v-if="materials.length > 0"
+          class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none"
+        >
           <input
             type="checkbox"
             :checked="isAllSelected"
             :indeterminate="isPartialSelected"
-            @change="toggleSelectAll"
             class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-primary-600"
+            @change="toggleSelectAll"
           />
           <span>全选</span>
-          <span v-if="selectedIds.size > 0" class="text-primary-600 dark:text-primary-400 font-medium">（{{ selectedIds.size }}）</span>
+          <span v-if="selectedIds.size > 0" class="text-primary-600 dark:text-primary-400 font-medium">
+            （{{ selectedIds.size }}）
+          </span>
         </label>
       </div>
 
       <!-- 批量操作栏 -->
       <Transition name="batch-bar">
-        <div v-if="selectedIds.size > 0" class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
-          <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
-            已选 {{ selectedIds.size }} 项
-          </span>
+        <div
+          v-if="selectedIds.size > 0"
+          class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800"
+        >
+          <span class="text-sm font-medium text-primary-700 dark:text-primary-300">已选 {{ selectedIds.size }} 项</span>
           <div class="flex items-center gap-2 flex-wrap">
             <button
-              @click="handleBatchAnalyze"
               :disabled="batchAnalyzing"
               class="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleBatchAnalyze"
             >
               {{ batchAnalyzing ? `分析中 ${batchProgress.completed}/${batchProgress.total}` : '批量分析' }}
             </button>
             <button
-              @click="handleBatchDelete"
               class="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+              @click="handleBatchDelete"
             >
               批量删除
             </button>
             <button
-              @click="selectedIds = new Set()"
               class="px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              @click="selectedIds = new Set()"
             >
               取消选择
             </button>
@@ -230,7 +297,7 @@
             <div class="h-2 rounded-full bg-primary-200 dark:bg-primary-800 overflow-hidden">
               <div
                 class="h-full rounded-full bg-primary-600 dark:bg-primary-400 transition-all duration-500"
-                :style="{ width: Math.round(batchProgress.completed / batchProgress.total * 100) + '%' }"
+                :style="{ width: Math.round((batchProgress.completed / batchProgress.total) * 100) + '%' }"
               ></div>
             </div>
             <p class="text-xs text-primary-600 dark:text-primary-400 mt-1">
@@ -244,32 +311,56 @@
       <div v-if="existingTags.length > 0" class="mb-4 flex flex-wrap items-center gap-2">
         <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">标签过滤：</span>
         <button
-          @click="activeTagFilter = ''"
           class="px-2.5 py-1 rounded-full text-xs font-medium transition-all border"
-          :class="activeTagFilter === '' ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-700' : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:border-gray-300'"
+          :class="
+            activeTagFilter === ''
+              ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-700'
+              : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:border-gray-300'
+          "
+          @click="activeTagFilter = ''"
         >
           全部
         </button>
         <button
           v-for="tag in existingTags"
           :key="tag.name"
-          @click="activeTagFilter = activeTagFilter === tag.name ? '' : tag.name"
           class="px-2.5 py-1 rounded-full text-xs font-medium transition-all border"
-          :class="activeTagFilter === tag.name ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-700' : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:border-gray-300'"
+          :class="
+            activeTagFilter === tag.name
+              ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-700'
+              : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 hover:border-gray-300'
+          "
+          @click="activeTagFilter = activeTagFilter === tag.name ? '' : tag.name"
         >
           {{ tag.name }}
           <span class="ml-0.5 opacity-60">{{ tag.count }}</span>
         </button>
       </div>
 
-      <div v-if="materials.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
+      <!-- 骨架屏加载 -->
+      <div v-if="materialsLoading && materials.length === 0" class="space-y-3">
+        <ListSkeleton :count="6" type="list" />
+      </div>
+
+      <div
+        v-else-if="materials.length === 0 && !materialsLoading"
+        class="text-center py-8 text-gray-400 dark:text-gray-500"
+      >
         暂无材料，上传你的第一份学习材料吧
       </div>
 
-      <div v-else class="space-y-3">
-        <div v-for="m in materials" :key="m.id"
+      <div v-else ref="materialsListRef" class="space-y-3 max-h-[70vh] overflow-y-auto custom-scroll">
+        <!-- 虚拟滚动：顶部占位 -->
+        <div v-if="matVirtualized" :style="{ height: matTopSpacer + 'px' }" aria-hidden="true"></div>
+        <div
+          v-for="m in visibleMaterials"
+          :key="m.id"
           class="relative rounded-lg border transition-all"
-          :class="isSelected(m.id) ? 'border-primary-400 dark:border-primary-600 bg-primary-50/50 dark:bg-primary-900/10' : 'border-gray-100 dark:border-gray-700 hover:border-primary-200 dark:hover:bg-gray-700'"
+          :class="
+            isSelected(m.id)
+              ? 'border-primary-400 dark:border-primary-600 bg-primary-50/50 dark:bg-primary-900/10'
+              : 'border-gray-100 dark:border-gray-700 hover:border-primary-200 dark:hover:bg-gray-700'
+          "
           @mouseenter="handleCardMouseenter($event, m)"
           @mouseleave="handleCardMouseleave"
         >
@@ -279,13 +370,24 @@
               <input
                 type="checkbox"
                 :checked="isSelected(m.id)"
-                @click.stop="toggleSelection(m.id)"
                 class="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-primary-600 shrink-0"
+                @click.stop="toggleSelection(m.id)"
               />
               <div class="flex-1 min-w-0">
-                <router-link :to="`/materials/${m.id}`" class="font-medium dark:text-gray-100 hover:text-primary-600 transition block truncate">{{ m.title }}</router-link>
+                <router-link
+                  :to="`/materials/${m.id}`"
+                  class="font-medium dark:text-gray-100 hover:text-primary-600 transition block truncate"
+                >
+                  {{ m.title }}
+                </router-link>
                 <div v-if="m.tags" class="flex flex-wrap gap-1 mt-1">
-                  <span v-for="t in m.tags.split(',')" :key="t" class="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{{ t.trim() }}</span>
+                  <span
+                    v-for="t in m.tags.split(',')"
+                    :key="t"
+                    class="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                  >
+                    {{ t.trim() }}
+                  </span>
                 </div>
                 <div class="flex items-center justify-between mt-2">
                   <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(m.created_at) }}</p>
@@ -296,7 +398,9 @@
               </div>
             </div>
           </div>
-          <div class="md:hidden flex items-center gap-3 px-4 py-3 border-t border-gray-50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 rounded-b-lg pl-11">
+          <div
+            class="md:hidden flex items-center gap-3 px-4 py-3 border-t border-gray-50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 rounded-b-lg pl-11"
+          >
             <router-link
               v-if="m.status === 'completed' || m.status === 'partial'"
               :to="`/materials/${m.id}`"
@@ -306,17 +410,27 @@
             </router-link>
             <button
               v-if="m.status === 'pending'"
-              @click="handleAnalyze(m.id)"
               class="text-xs text-primary-600 hover:text-primary-700 font-medium"
+              @click="handleAnalyze(m.id)"
             >
               开始分析
             </button>
             <button
-              @click="handleDelete(m.id)"
-              class="text-xs text-red-400 hover:text-red-600 ml-auto"
+              v-if="m.status === 'completed' || m.status === 'partial'"
+              :class="[
+                'text-xs font-medium flex items-center gap-0.5',
+                m.is_public ? 'text-emerald-500' : 'text-gray-400'
+              ]"
+              @click.stop="handleToggleShare(m)"
             >
-              删除
+              <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"
+                />
+              </svg>
+              {{ m.is_public ? '已分享' : '分享' }}
             </button>
+            <button class="text-xs text-red-400 hover:text-red-600 ml-auto" @click="handleDelete(m.id)">删除</button>
           </div>
 
           <!-- 桌面端横排布局 -->
@@ -324,13 +438,24 @@
             <input
               type="checkbox"
               :checked="isSelected(m.id)"
-              @click.stop="toggleSelection(m.id)"
               class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 accent-primary-600 shrink-0"
+              @click.stop="toggleSelection(m.id)"
             />
             <div class="flex-1 min-w-0">
-              <router-link :to="`/materials/${m.id}`" class="font-medium dark:text-gray-100 truncate hover:text-primary-600 transition">{{ m.title }}</router-link>
+              <router-link
+                :to="`/materials/${m.id}`"
+                class="font-medium dark:text-gray-100 truncate hover:text-primary-600 transition"
+              >
+                {{ m.title }}
+              </router-link>
               <div v-if="m.tags" class="flex flex-wrap gap-1 mt-1">
-                <span v-for="t in m.tags.split(',')" :key="t" class="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{{ t.trim() }}</span>
+                <span
+                  v-for="t in m.tags.split(',')"
+                  :key="t"
+                  class="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                >
+                  {{ t.trim() }}
+                </span>
               </div>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ formatDate(m.created_at) }}</p>
             </div>
@@ -347,21 +472,49 @@
               </router-link>
               <button
                 v-if="m.status === 'pending'"
-                @click="handleAnalyze(m.id)"
                 class="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                @click="handleAnalyze(m.id)"
               >
                 开始分析
               </button>
               <button
-                @click="handleDelete(m.id)"
-                class="text-xs text-red-400 hover:text-red-600"
+                v-if="m.status === 'completed' || m.status === 'partial'"
+                :class="[
+                  'text-xs font-medium transition flex items-center gap-0.5',
+                  m.is_public ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
+                ]"
+                :title="m.is_public ? '已公开，点击取消分享' : '点击分享到材料市场'"
+                @click.stop="handleToggleShare(m)"
               >
-                删除
+                <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"
+                  />
+                </svg>
+                {{ m.is_public ? '已分享' : '分享' }}
               </button>
+              <button class="text-xs text-red-400 hover:text-red-600" @click="handleDelete(m.id)">删除</button>
             </div>
           </div>
         </div>
+        <!-- 虚拟滚动：底部占位 -->
+        <div v-if="matVirtualized" :style="{ height: matBottomSpacer + 'px' }" aria-hidden="true"></div>
+        <!-- 虚拟滚动激活提示 -->
+        <div v-if="matVirtualized" class="text-center py-2 text-xs text-gray-400 dark:text-gray-500">
+          已启用虚拟滚动 · 显示 {{ matEndIdx - matStartIdx }} / {{ materials.length }} 条
+        </div>
+        <!-- 无限滚动：哨兵元素 -->
+        <div ref="matSentinelRef" class="h-1" aria-hidden="true"></div>
+        <!-- 无限滚动：底部状态 -->
+        <InfiniteScrollFooter
+          :loading="matLoading"
+          :has-more="matHasMore"
+          :error="matError"
+          :total-count="materials.length"
+          @retry="loadMoreMaterials"
+        />
       </div>
+      <ScrollToTop :show="showMatScrollTop" @click="scrollToMatTop" />
 
       <!-- 分析摘要预览浮层 -->
       <Teleport to="body">
@@ -372,14 +525,21 @@
             :style="{ top: popoverPos.top + 'px', left: popoverPos.left + 'px' }"
           >
             <div class="flex items-center gap-2 mb-3 pb-2.5 border-b border-gray-100 dark:border-gray-700">
-              <span class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400 text-xs font-bold">Ai</span>
+              <span
+                class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400 text-xs font-bold"
+              >
+                Ai
+              </span>
               <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">分析摘要预览</span>
               <span class="ml-auto text-[10px] text-gray-400 dark:text-gray-500">hover 触发</span>
             </div>
 
             <div class="max-h-64 overflow-y-auto pr-1 custom-scroll">
               <!-- 摘要文本 -->
-              <p v-if="hoverPreview.summary" class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-3 line-clamp-4">
+              <p
+                v-if="hoverPreview.summary"
+                class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-3 line-clamp-4"
+              >
                 {{ hoverPreview.summary }}
               </p>
               <p v-else class="text-sm text-gray-400 dark:text-gray-500 italic mb-3">暂无文字摘要</p>
@@ -388,8 +548,14 @@
               <div v-if="hoverPreview.keyPoints?.length" class="mb-3">
                 <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
                   <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM4 11a1 1 0 100-2H3a1 1 0 000 2h1zM10 18a1 1 0 001-1v-1a1 1 0 10-2 0v1a1 1 0 001 1z" />
-                    <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z" clip-rule="evenodd" />
+                    <path
+                      d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM4 11a1 1 0 100-2H3a1 1 0 000 2h1zM10 18a1 1 0 001-1v-1a1 1 0 10-2 0v1a1 1 0 001 1z"
+                    />
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
                   知识点（{{ hoverPreview.keyPoints.length }}）
                 </h4>
@@ -399,8 +565,14 @@
                     :key="idx"
                     class="flex items-start gap-1.5 text-xs text-gray-600 dark:text-gray-400"
                   >
-                    <span class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-[10px] flex items-center justify-center font-medium mt-0.5 shrink-0">{{ idx + 1 }}</span>
-                    <span class="line-clamp-1">{{ typeof point === 'string' ? point : point.title || point.name || '' }}</span>
+                    <span
+                      class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-[10px] flex items-center justify-center font-medium mt-0.5 shrink-0"
+                    >
+                      {{ idx + 1 }}
+                    </span>
+                    <span class="line-clamp-1">
+                      {{ typeof point === 'string' ? point : point.title || point.name || '' }}
+                    </span>
                   </div>
                   <p v-if="hoverPreview.keyPoints.length > 4" class="text-[10px] text-gray-400 dark:text-gray-500 ml-5">
                     还有 {{ hoverPreview.keyPoints.length - 4 }} 个知识点...
@@ -412,8 +584,18 @@
               <div v-if="hoverPreview.relationships?.length" class="mb-3">
                 <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
                   <svg class="w-3 h-3 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"
+                    />
                   </svg>
                   概念关系（{{ hoverPreview.relationships.length }}）
                 </h4>
@@ -423,9 +605,13 @@
                     :key="idx"
                     class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"
                   >
-                    <span class="font-medium text-purple-600 dark:text-purple-400 truncate max-w-[100px]">{{ rel.source || rel.from }}</span>
+                    <span class="font-medium text-purple-600 dark:text-purple-400 truncate max-w-[100px]">
+                      {{ rel.source || rel.from }}
+                    </span>
                     <span class="text-purple-400 shrink-0">→</span>
-                    <span class="font-medium text-purple-600 dark:text-purple-400 truncate max-w-[100px]">{{ rel.target || rel.to }}</span>
+                    <span class="font-medium text-purple-600 dark:text-purple-400 truncate max-w-[100px]">
+                      {{ rel.target || rel.to }}
+                    </span>
                   </div>
                   <p v-if="hoverPreview.relationships.length > 3" class="text-[10px] text-gray-400 dark:text-gray-500">
                     还有 {{ hoverPreview.relationships.length - 3 }} 条关系...
@@ -434,7 +620,10 @@
               </div>
 
               <!-- 重要性 -->
-              <div v-if="hoverPreview.importance" class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+              <div
+                v-if="hoverPreview.importance"
+                class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800"
+              >
                 <p class="text-xs text-emerald-700 dark:text-emerald-400 font-medium mb-0.5">重要性</p>
                 <p class="text-xs text-emerald-600 dark:text-emerald-500 line-clamp-2">{{ hoverPreview.importance }}</p>
               </div>
@@ -443,7 +632,12 @@
             <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700">
               <p class="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 点击"查看"或标题进入详情页查看完整分析
               </p>
@@ -456,21 +650,94 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import {
-  uploadMaterial, uploadFile, listMaterials, analyzeMaterial, deleteMaterial, getMaterialStatus,
-  batchAnalyzeMaterials, batchDeleteMaterials, getTags
+  uploadMaterial,
+  uploadFile,
+  listMaterials,
+  analyzeMaterial,
+  deleteMaterial,
+  getMaterialStatus,
+  batchAnalyzeMaterials,
+  batchDeleteMaterials,
+  getTags,
+  toggleShare
 } from '../api/client'
 import AgentFlow from '../components/AgentFlow.vue'
+import ListSkeleton from '../components/ListSkeleton.vue'
+import InfiniteScrollFooter from '../components/InfiniteScrollFooter.vue'
+import ScrollToTop from '../components/ScrollToTop.vue'
 import { useToast, useConfirm } from '../composables/useToast'
+import { useVirtualScroll } from '../composables/useVirtualScroll'
+import { useInfiniteScroll, useScrollToTop } from '../composables/useInfiniteScroll'
+import { useNetworkStatus } from '../composables/useNetworkStatus'
 
 const toast = useToast()
 const { confirm } = useConfirm()
+const { isOnline } = useNetworkStatus()
 
 const form = reactive({ title: '', content: '', tags: '' })
 const uploading = ref(false)
 const analyzing = ref(false)
 const materials = ref([])
+const materialsLoading = ref(false)
+const materialsListRef = ref(null)
+
+// 虚拟滚动：材料列表 >100 条时启用
+const {
+  startIndex: matStartIdx,
+  endIndex: matEndIdx,
+  topSpacerHeight: matTopSpacer,
+  bottomSpacerHeight: matBottomSpacer,
+  shouldVirtualize: matVirtualized
+} = useVirtualScroll(
+  materialsListRef,
+  computed(() => materials.value.length),
+  {
+    itemHeight: 120,
+    buffer: 5,
+    threshold: 100
+  }
+)
+
+const visibleMaterials = computed(() => {
+  if (!matVirtualized.value) return materials.value
+  return materials.value.slice(matStartIdx.value, matEndIdx.value)
+})
+
+// 无限滚动
+const matSentinelRef = ref(null)
+const {
+  loading: matLoading,
+  hasMore: matHasMore,
+  error: matError,
+  total: _matTotal,
+  loadNext: matLoadNext,
+  reset: matResetScroll,
+  retry: _matRetry,
+  init: matInitScroll
+} = useInfiniteScroll({
+  limit: 20,
+  rootMargin: '300px',
+  onLoad: async (offset, limit) => {
+    const params = { limit, offset }
+    if (activeTagFilter.value) params.tag = activeTagFilter.value
+    const res = await listMaterials(params)
+    return { items: res.data.data || [], total: res.data.total || 0 }
+  },
+  onItems: (items) => {
+    materials.value.push(...items)
+  }
+})
+
+// 返回顶部
+const {
+  showButton: showMatScrollTop,
+  scrollToTop: scrollToMatTop,
+  initScrollListener: initMatScrollListener,
+  destroyScrollListener: destroyMatScrollListener
+} = useScrollToTop(materialsListRef)
+
 let ws = null
 let wsRetryCount = 0
 const MAX_WS_RETRIES = 5
@@ -509,7 +776,7 @@ function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedIds.value = new Set()
   } else {
-    selectedIds.value = new Set(materials.value.map(m => m.id))
+    selectedIds.value = new Set(materials.value.map((m) => m.id))
   }
 }
 
@@ -530,7 +797,7 @@ async function handleBatchAnalyze() {
     const res = await batchAnalyzeMaterials(ids)
     toast.success(res.data.message || '批量分析已启动')
     // 更新本地材料状态为 analyzing
-    materials.value = materials.value.map(m => {
+    materials.value = materials.value.map((m) => {
       if (selectedIds.value.has(m.id) && m.status === 'pending') {
         return { ...m, status: 'analyzing' }
       }
@@ -585,16 +852,19 @@ const tagSuggestionQuery = ref('')
 // 解析表单中已输入的标签
 const parsedFormTags = computed(() => {
   if (!form.tags) return []
-  return form.tags.split(',').map(t => t.trim()).filter(Boolean)
+  return form.tags
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
 })
 
 // 过滤后的已有标签建议（排除已输入的）
 const filteredExistingTags = computed(() => {
-  const entered = new Set(parsedFormTags.value.map(t => t.toLowerCase()))
-  let tags = existingTags.value.filter(t => !entered.has(t.name.toLowerCase()))
+  const entered = new Set(parsedFormTags.value.map((t) => t.toLowerCase()))
+  let tags = existingTags.value.filter((t) => !entered.has(t.name.toLowerCase()))
   if (tagSuggestionQuery.value) {
     const q = tagSuggestionQuery.value.toLowerCase()
-    tags = tags.filter(t => t.name.toLowerCase().includes(q))
+    tags = tags.filter((t) => t.name.toLowerCase().includes(q))
   }
   return tags.slice(0, 8)
 })
@@ -627,7 +897,9 @@ function removeFormTag(idx) {
 }
 
 function hideSuggestions() {
-  setTimeout(() => { showTagSuggestions.value = false }, 150)
+  setTimeout(() => {
+    showTagSuggestions.value = false
+  }, 150)
 }
 
 async function loadTags() {
@@ -640,7 +912,11 @@ async function loadTags() {
 }
 
 // 标签过滤变化时重新加载材料
-watch(activeTagFilter, () => { loadMaterials() })
+watch(activeTagFilter, async () => {
+  await loadMaterials()
+  await nextTick()
+  initInfiniteScroll()
+})
 
 const fileType = computed(() => {
   if (!fileInfo.value) return ''
@@ -723,10 +999,50 @@ async function processFile(file) {
 }
 
 const agents = ref([
-  { name: 'Analyst 分析师', icon: '🔍', output: '', done: false, error: false, qualityScore: 0, judgeComment: '', duration: 0, finishedAt: 0 },
-  { name: 'QuizMaster 出题官', icon: '✏️', output: '', done: false, error: false, qualityScore: 0, judgeComment: '', duration: 0, finishedAt: 0 },
-  { name: 'CardMaker 卡片师', icon: '🃏', output: '', done: false, error: false, qualityScore: 0, judgeComment: '', duration: 0, finishedAt: 0 },
-  { name: 'MapBuilder 图谱师', icon: '🗺️', output: '', done: false, error: false, qualityScore: 0, judgeComment: '', duration: 0, finishedAt: 0 },
+  {
+    name: 'Analyst 分析师',
+    icon: '🔍',
+    output: '',
+    done: false,
+    error: false,
+    qualityScore: 0,
+    judgeComment: '',
+    duration: 0,
+    finishedAt: 0
+  },
+  {
+    name: 'QuizMaster 出题官',
+    icon: '✏️',
+    output: '',
+    done: false,
+    error: false,
+    qualityScore: 0,
+    judgeComment: '',
+    duration: 0,
+    finishedAt: 0
+  },
+  {
+    name: 'CardMaker 卡片师',
+    icon: '🃏',
+    output: '',
+    done: false,
+    error: false,
+    qualityScore: 0,
+    judgeComment: '',
+    duration: 0,
+    finishedAt: 0
+  },
+  {
+    name: 'MapBuilder 图谱师',
+    icon: '🗺️',
+    output: '',
+    done: false,
+    error: false,
+    qualityScore: 0,
+    judgeComment: '',
+    duration: 0,
+    finishedAt: 0
+  }
 ])
 
 const analyzeStartTime = ref(0)
@@ -749,13 +1065,15 @@ function formatDate(d) {
 }
 
 function statusClass(s) {
-  return {
-    pending: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
-    analyzing: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    completed: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    partial: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-    failed: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-  }[s] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+  return (
+    {
+      pending: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+      analyzing: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+      completed: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+      partial: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+      failed: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+    }[s] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+  )
 }
 
 function statusLabel(s) {
@@ -824,7 +1142,7 @@ async function handleUpload() {
       title: form.title,
       content: form.content,
       content_type: 'text',
-      tags: form.tags || '',
+      tags: form.tags || ''
     })
     form.title = ''
     form.content = ''
@@ -846,7 +1164,15 @@ async function handleAnalyze(id) {
   analyzing.value = true
   currentAnalyzingId.value = id
   analyzeStartTime.value = Date.now()
-  agents.value.forEach(a => { a.output = ''; a.done = false; a.error = false; a.qualityScore = 0; a.judgeComment = ''; a.duration = 0; a.finishedAt = 0 })
+  agents.value.forEach((a) => {
+    a.output = ''
+    a.done = false
+    a.error = false
+    a.qualityScore = 0
+    a.judgeComment = ''
+    a.duration = 0
+    a.finishedAt = 0
+  })
 
   // 连接 WebSocket 接收 Agent 实时输出
   connectWebSocket()
@@ -881,7 +1207,10 @@ function connectWebSocket() {
       if (data.type === 'agent_output') {
         // 后端发送 agent_name: "Analyst" / "QuizMaster" / "CardMaker" / "MapBuilder"
         const agentMap = {
-          analyst: 0, quizmaster: 1, cardmaker: 2, mapbuilder: 3,
+          analyst: 0,
+          quizmaster: 1,
+          cardmaker: 2,
+          mapbuilder: 3
         }
         const name = (data.agent_name || '').toLowerCase()
         const idx = agentMap[name]
@@ -913,7 +1242,8 @@ function connectWebSocket() {
               const parsed = typeof agentData === 'string' ? JSON.parse(agentData) : agentData
               if (parsed.cards) summary = `生成了 ${parsed.cards.length} 张知识卡片`
               else if (parsed.quizzes) summary = `生成了 ${parsed.quizzes.length} 道练习题`
-              else if (parsed.nodes) summary = `构建了 ${parsed.nodes.length} 个知识节点，${(parsed.edges || []).length} 条关系边`
+              else if (parsed.nodes)
+                summary = `构建了 ${parsed.nodes.length} 个知识节点，${(parsed.edges || []).length} 条关系边`
               else if (parsed.key_points) summary = `提取了 ${parsed.key_points.length} 个关键知识点`
               else summary = '分析完成'
             } catch {
@@ -936,7 +1266,11 @@ function connectWebSocket() {
         currentAnalyzingId.value = null
         if (isPolling.value) stopPolling()
         // Close WebSocket to free resources after analysis
-        if (ws) { ws.onclose = null; ws.close(); ws = null }
+        if (ws) {
+          ws.onclose = null
+          ws.close()
+          ws = null
+        }
         loadMaterials()
         loadTags()
       }
@@ -947,7 +1281,7 @@ function connectWebSocket() {
         batchProgress.value.completed = (batchProgress.value.completed || 0) + 1
         // 更新对应材料的本地状态
         if (content.status === 'completed' || content.status === 'failed') {
-          materials.value = materials.value.map(m => {
+          materials.value = materials.value.map((m) => {
             if (m.id === content.material_id) {
               return { ...m, status: content.status === 'completed' ? 'completed' : 'failed' }
             }
@@ -962,7 +1296,11 @@ function connectWebSocket() {
         batchProgress.value = { completed: 0, total: 0 }
         selectedIds.value = new Set()
         // Close WebSocket to free resources
-        if (ws) { ws.onclose = null; ws.close(); ws = null }
+        if (ws) {
+          ws.onclose = null
+          ws.close()
+          ws = null
+        }
         loadMaterials()
         toast.success('批量分析全部完成')
       }
@@ -974,7 +1312,11 @@ function connectWebSocket() {
         currentAnalyzingId.value = null
         if (isPolling.value) stopPolling()
         // Close WebSocket to free resources
-        if (ws) { ws.onclose = null; ws.close(); ws = null }
+        if (ws) {
+          ws.onclose = null
+          ws.close()
+          ws = null
+        }
         loadMaterials()
       }
     } catch (e) {
@@ -1047,7 +1389,10 @@ async function pollMaterialStatus(materialId) {
     // 更新各 Agent 的进度状态
     if (data.agents && Array.isArray(data.agents)) {
       const agentMap = {
-        analyst: 0, quizmaster: 1, cardmaker: 2, mapbuilder: 3,
+        analyst: 0,
+        quizmaster: 1,
+        cardmaker: 2,
+        mapbuilder: 3
       }
       for (const agent of data.agents) {
         const name = (agent.name || '').toLowerCase()
@@ -1093,32 +1438,70 @@ async function handleDelete(id) {
   }
 }
 
-async function loadMaterials() {
+async function handleToggleShare(m) {
   try {
-    const params = { limit: 200 }
-    if (activeTagFilter.value) params.tag = activeTagFilter.value
-    const res = await listMaterials(params)
-    materials.value = res.data.data || []
-  } catch (e) {
-    console.error('材料列表加载失败:', e)
+    const res = await toggleShare(m.id)
+    // 更新本地状态
+    m.is_public = res.data.is_public
+    m.share_code = res.data.share_code || ''
+    toast.success(res.data.message || (m.is_public ? '已公开分享' : '已取消分享'))
+  } catch (err) {
+    toast.error('分享操作失败')
   }
 }
 
-onMounted(() => {
-  loadMaterials()
+async function loadMaterials() {
+  materialsLoading.value = true
+  matResetScroll()
+  materials.value = []
+  try {
+    const newItems = await matLoadNext()
+    materials.value.push(...newItems)
+  } catch (e) {
+    console.error('材料列表加载失败:', e)
+  } finally {
+    materialsLoading.value = false
+  }
+}
+
+// 无限滚动加载更多
+async function loadMoreMaterials() {
+  try {
+    const newItems = await matLoadNext()
+    materials.value.push(...newItems)
+  } catch (e) {
+    console.error('加载更多材料失败:', e)
+  }
+}
+
+// 初始化无限滚动 sentinel 观察
+function initInfiniteScroll() {
+  if (matSentinelRef.value && materialsListRef.value) {
+    matInitScroll(matSentinelRef.value, materialsListRef.value)
+    initMatScrollListener()
+  }
+}
+
+onMounted(async () => {
+  await loadMaterials()
   loadTags()
+  await nextTick()
+  initInfiniteScroll()
 })
 onUnmounted(() => {
   if (ws) ws.close()
   if (isPolling.value) stopPolling()
   if (hoverTimer) clearTimeout(hoverTimer)
+  destroyMatScrollListener()
 })
 </script>
 
 <style scoped>
 .preview-enter-active,
 .preview-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 .preview-enter-from,
 .preview-leave-to {
@@ -1149,7 +1532,9 @@ onUnmounted(() => {
 }
 .tag-suggest-enter-active,
 .tag-suggest-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .tag-suggest-enter-from,
 .tag-suggest-leave-to {

@@ -14,7 +14,33 @@ import (
 	"studyforge/internal/rag"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "studyforge/docs"
 )
+
+// @title StudyForge Pro API
+// @version 2.0
+// @description StudyForge Pro 智能学习平台 REST API。支持 AI 分析、间隔重复、流式对话、知识图谱等功能。
+// @description
+// @description 所有认证端点需在 Header 携带 `Authorization: Bearer <token>`。
+
+// @contact.name StudyForge Pro
+// @contact.url https://github.com/studyforge-pro
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT Bearer Token（格式: Bearer xxx）
+
+// @schemes http https
 
 func main() {
 	// 加载配置（支持 CONFIG_PATH 环境变量指定配置文件路径）
@@ -72,6 +98,9 @@ func main() {
 	// CORS 中间件
 	r.Use(corsMiddleware())
 
+	// API 性能监控中间件（全局，记录所有请求延迟）
+	r.Use(middleware.MetricsMiddleware())
+
 	// 初始化管理器（注入所有依赖：DB、LLM、VectorStore、RAG 配置）
 	h := handler.NewHandler(
 		db,
@@ -105,6 +134,9 @@ func main() {
 		api.GET("/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "ok", "service": "StudyForge Pro"})
 		})
+
+		// Swagger API 文档
+		api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
 	// ========== 需要认证的路由 ==========
@@ -125,8 +157,29 @@ func main() {
 		auth.POST("/materials/:id/analyze", h.AnalyzeMaterial)
 		auth.GET("/materials/:id/status", h.GetMaterialStatus)
 
+		// 材料分享
+		auth.PUT("/materials/:id/share", h.ToggleShare)
+		auth.GET("/market/tags", h.GetMarketTags)
+		auth.GET("/market/materials", h.ListMarketMaterials)
+		auth.POST("/market/materials/:share_code/collect", h.CollectMarketMaterial)
+		auth.GET("/market/materials/:share_code", h.PreviewMarketMaterial)
+
+		// 卡片组（牌组）
+		auth.GET("/decks", h.ListDecks)
+		auth.POST("/decks", h.CreateDeck)
+		auth.GET("/decks/:id", h.GetDeck)
+		auth.DELETE("/decks/:id", h.DeleteDeck)
+		auth.PUT("/decks/:id/share", h.ToggleDeckShare)
+
+		// 牌组市场
+		auth.GET("/market/decks/tags", h.GetMarketDeckTags)
+		auth.GET("/market/decks", h.ListMarketDecks)
+		auth.POST("/market/decks/:share_code/collect", h.CollectMarketDeck)
+		auth.GET("/market/decks/:share_code", h.PreviewMarketDeck)
+
 		// 知识卡片
 		auth.GET("/cards/export", h.ExportCards)
+		auth.GET("/cards/due", h.GetDueCards)
 		auth.GET("/cards", h.ListCards)
 		auth.GET("/cards/:id", h.GetCard)
 		auth.POST("/cards/:id/review", h.ReviewCard)
@@ -170,6 +223,9 @@ func main() {
 		// 学习建议
 		auth.GET("/recommendations", h.GetRecommendations)
 
+		// 知识弱点诊断
+		auth.GET("/diagnosis", h.GetDiagnosis)
+
 		// 学习路径规划
 		auth.GET("/learning-path", h.GetLearningPath)
 
@@ -182,18 +238,115 @@ func main() {
 		auth.GET("/notifications", h.ListNotifications)
 		auth.POST("/notifications/:id/read", h.ReadNotification)
 
+		// 番茄钟
+		auth.POST("/pomodoro/start", h.StartPomodoro)
+		auth.POST("/pomodoro/end", h.EndPomodoro)
+		auth.GET("/pomodoro/stats", h.GetPomodoroStats)
+
+		// 学习目标
+		auth.GET("/goals/progress", h.GetGoalProgress)
+		auth.GET("/goals", h.ListGoals)
+		auth.POST("/goals", h.CreateGoal)
+		auth.PUT("/goals/:id", h.UpdateGoal)
+		auth.DELETE("/goals/:id", h.DeleteGoal)
+
+		// 学习报告
+		auth.GET("/reports/weekly", h.GetWeeklyReport)
+		auth.GET("/reports/monthly", h.GetMonthlyReport)
+
+		// 学习连续打卡
+		auth.GET("/streaks", h.GetStreaks)
+
+		// 学习排行榜
+		auth.GET("/leaderboard", h.GetLeaderboard)
+		auth.GET("/leaderboard/me", h.GetMyLeaderboardStats)
+
+		// 每日任务
+		auth.GET("/daily-tasks", h.GetDailyTasks)
+		auth.POST("/daily-tasks", h.CreateDailyTask)
+		auth.PUT("/daily-tasks/:id", h.UpdateDailyTask)
+		auth.PUT("/daily-tasks/:id/toggle", h.ToggleDailyTask)
+		auth.DELETE("/daily-tasks/:id", h.DeleteDailyTask)
+
+		// 笔记系统
+		auth.GET("/notes/search", h.SearchNotes)
+		auth.GET("/notes/folders", h.ListNoteFolders)
+		auth.POST("/notes/folders", h.CreateNoteFolder)
+		auth.PUT("/notes/folders/:id", h.UpdateNoteFolder)
+		auth.DELETE("/notes/folders/:id", h.DeleteNoteFolder)
+		auth.GET("/notes", h.ListNotes)
+		auth.POST("/notes", h.CreateNote)
+		auth.GET("/notes/:id", h.GetNote)
+		auth.PUT("/notes/:id", h.UpdateNote)
+		auth.DELETE("/notes/:id", h.DeleteNote)
+
+		// Anki 导入
+		auth.POST("/import/anki", h.ImportAnkiPreview)
+		auth.POST("/import/anki/confirm", h.ImportAnkiConfirm)
+
+		// 好友系统
+		auth.GET("/friends/requests", h.GetFriendRequests)
+		auth.GET("/friends/search", h.SearchUsers)
+		auth.GET("/friends/count", h.GetFriendCount)
+		auth.GET("/friends", h.ListFriends)
+		auth.POST("/friends/request", h.SendFriendRequest)
+		auth.PUT("/friends/request/:id/accept", h.AcceptFriendRequest)
+		auth.DELETE("/friends/request/:id", h.RejectFriendRequest)
+		auth.DELETE("/friends/:id", h.RemoveFriend)
+
+		// 学习小组
+		auth.GET("/groups", h.ListGroups)
+		auth.POST("/groups", h.CreateGroup)
+		auth.GET("/groups/:id", h.GetGroup)
+		auth.PUT("/groups/:id", h.UpdateGroup)
+		auth.DELETE("/groups/:id", h.DeleteGroup)
+		auth.POST("/groups/:id/join", h.JoinGroup)
+		auth.POST("/groups/:id/leave", h.LeaveGroup)
+		auth.GET("/groups/:id/members", h.GetGroupMembers)
+		auth.GET("/groups/:id/progress", h.GetGroupProgress)
+		auth.GET("/groups/:id/goals", h.GetGroupGoals)
+		auth.POST("/groups/:id/goals", h.CreateGroupGoal)
+		auth.DELETE("/groups/:id/goals/:goal_id", h.DeleteGroupGoal)
+
+		// 模拟考试
+		auth.POST("/exam/generate", h.GenerateExam)
+		auth.POST("/exams/:id/submit", h.SubmitExam)
+		auth.GET("/exams", h.ListExams)
+		auth.GET("/exams/:id", h.GetExam)
+
+		// AI 概念解释器
+		auth.GET("/explain/history", h.GetExplainHistory)
+		auth.POST("/explain", h.ExplainConcept)
+		auth.DELETE("/explain/:id", h.DeleteExplainCache)
+
+		// 知识洞察（跨材料关联）
+		auth.GET("/insights/connections", h.GetConnections)
+
+		// 图片上传（卡片图片）
+		auth.POST("/images/upload", h.UploadImage)
+
 		// 知识图谱
 		auth.GET("/graph/all", h.GetAllKnowledgeGraphs)
 		auth.GET("/graph/:material_id", h.GetKnowledgeGraph)
 
-		// 用户学习统计
+		// 学习统计
 		auth.GET("/stats", h.GetUserStats)
 		auth.GET("/stats/calendar", h.GetCalendarHeatmap)
+
+		// 数据导出
+		auth.GET("/export/preview", h.ExportDataPreview)
+		auth.GET("/export/data", h.ExportData)
 
 		// Dashboard / 可观测性
 		auth.GET("/dashboard/metrics", h.GetMetrics)
 		auth.GET("/dashboard/activity", h.GetDailyActivity)
 		auth.GET("/dashboard/traces", h.ListTraces)
+
+		// Admin 数据库诊断（开发模式可用）
+		auth.GET("/admin/db-stats", h.GetDBStats)
+
+		// Admin API 性能监控（开发模式可用）
+		auth.GET("/admin/metrics", h.GetAPIMetrics)
 
 		// 示例数据
 		auth.POST("/seed", h.SeedData)
@@ -201,6 +354,12 @@ func main() {
 
 	// WebSocket 端点
 	r.GET("/ws", h.HandleWebSocket)
+
+	// 图片文件服务（UUID 文件名不可猜测，无需认证即可通过 img 标签加载）
+	r.GET("/api/images/:filename", h.ServeImage)
+
+	// 确保图片上传目录存在
+	os.MkdirAll(filepath.Join(".", "uploads", "images"), 0755)
 
 	// ========== 静态文件（Vue 前端 + PWA） ==========
 

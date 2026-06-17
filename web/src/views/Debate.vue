@@ -8,11 +8,16 @@
       </div>
       <button
         v-if="messages.length > 0"
-        @click="resetDebate"
         class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+        @click="resetDebate"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
         </svg>
         新辩论
       </button>
@@ -25,32 +30,52 @@
       :class="isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'"
     >
       <!-- 空状态 -->
-      <div v-if="messages.length === 0 && !loading" class="h-full flex flex-col items-center justify-center text-center py-12">
+      <div
+        v-if="messages.length === 0 && !loading"
+        class="h-full flex flex-col items-center justify-center text-center py-12"
+      >
         <div
           class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
           :class="isDark ? 'bg-primary-900/30' : 'bg-primary-50'"
         >
-          <svg class="w-10 h-10" :class="isDark ? 'text-primary-400' : 'text-primary-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
+          <svg
+            class="w-10 h-10"
+            :class="isDark ? 'text-primary-400' : 'text-primary-500'"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
+            />
           </svg>
         </div>
         <h3 class="text-lg font-semibold mb-2" :class="isDark ? 'text-gray-200' : 'text-gray-800'">多 Agent 辩论</h3>
         <p class="text-sm max-w-md mb-6" :class="isDark ? 'text-gray-400' : 'text-gray-500'">
-          输入一个知识点或概念，三位 AI 专家将从不同角度展开讨论：<br>
-          <span class="text-blue-500">分析师</span> 解析本质、
-          <span class="text-amber-500">出题官</span> 分析考法、
-          <span class="text-emerald-500">记忆大师</span> 设计记忆策略
+          输入一个知识点或概念，三位 AI 专家将从不同角度展开讨论：
+          <br />
+          <span class="text-blue-500">分析师</span>
+          解析本质、
+          <span class="text-amber-500">出题官</span>
+          分析考法、
+          <span class="text-emerald-500">记忆大师</span>
+          设计记忆策略
         </p>
         <!-- 推荐主题 -->
         <div class="flex flex-wrap gap-2 justify-center max-w-lg">
           <button
             v-for="topic in suggestedTopics"
             :key="topic"
-            @click="concept = topic; startDebate()"
             class="px-3 py-1.5 text-xs rounded-full border transition-colors"
-            :class="isDark
-              ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
-              : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'"
+            :class="
+              isDark
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
+            "
+            @click="selectTopic(topic)"
           >
             {{ topic }}
           </button>
@@ -60,7 +85,7 @@
       <!-- 辩论消息列表 -->
       <div v-for="(msg, idx) in messages" :key="idx" class="debate-message">
         <!-- 轮次分隔 -->
-        <div v-if="msg.round !== (messages[idx-1]?.round)" class="flex items-center gap-3 mb-4">
+        <div v-if="msg.round !== messages[idx - 1]?.round" class="flex items-center gap-3 mb-4">
           <div class="flex-1 h-px" :class="isDark ? 'bg-gray-700' : 'bg-gray-200'"></div>
           <span
             class="text-xs font-medium px-3 py-1 rounded-full"
@@ -72,10 +97,7 @@
         </div>
 
         <!-- 消息卡片 -->
-        <div
-          class="rounded-xl border p-4 sm:p-5 transition-all"
-          :class="messageCardClass(msg)"
-        >
+        <div class="rounded-xl border p-4 sm:p-5 transition-all" :class="messageCardClass(msg)">
           <!-- Agent 头部 -->
           <div class="flex items-center gap-3 mb-3">
             <div
@@ -86,11 +108,10 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-sm font-semibold" :class="isDark ? 'text-gray-100' : 'text-gray-900'">{{ msg.role }}</span>
-                <span
-                  class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                  :class="badgeClass(msg)"
-                >
+                <span class="text-sm font-semibold" :class="isDark ? 'text-gray-100' : 'text-gray-900'">
+                  {{ msg.role }}
+                </span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" :class="badgeClass(msg)">
                   {{ msg.agent_name }}
                 </span>
               </div>
@@ -125,10 +146,15 @@
           :class="isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'"
         >
           <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" :class="loadingAvatarClass">
-            <div class="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" :class="loadingSpinnerClass"></div>
+            <div
+              class="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+              :class="loadingSpinnerClass"
+            ></div>
           </div>
           <div>
-            <p class="text-sm font-medium" :class="isDark ? 'text-gray-300' : 'text-gray-700'">{{ loadingRole }} 正在思考...</p>
+            <p class="text-sm font-medium" :class="isDark ? 'text-gray-300' : 'text-gray-700'">
+              {{ loadingRole }} 正在思考...
+            </p>
             <p class="text-xs mt-0.5" :class="isDark ? 'text-gray-500' : 'text-gray-400'">{{ loadingHint }}</p>
           </div>
         </div>
@@ -141,42 +167,49 @@
         :class="isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'"
       >
         <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         <div>
           <p class="text-sm font-medium text-red-600 dark:text-red-400">辩论生成失败</p>
           <p class="text-xs mt-1" :class="isDark ? 'text-red-400/70' : 'text-red-500'">{{ error }}</p>
-          <button
-            @click="startDebate()"
-            class="mt-2 text-xs text-red-500 hover:text-red-600 underline"
-          >
-            重试
-          </button>
+          <button class="mt-2 text-xs text-red-500 hover:text-red-600 underline" @click="startDebate()">重试</button>
         </div>
       </div>
     </div>
 
     <!-- 底部输入区 -->
     <div class="flex-shrink-0 mt-4">
-      <form @submit.prevent="startDebate()" class="flex gap-3">
+      <form class="flex gap-3" @submit.prevent="startDebate()">
         <input
           v-model="concept"
           type="text"
           placeholder="输入一个知识点或概念，如：TCP 三次握手、二叉树遍历、牛顿第三定律..."
           class="flex-1 px-4 py-3 rounded-xl border text-sm outline-none transition-colors"
-          :class="isDark
-            ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-primary-500'
-            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500'"
+          :class="
+            isDark
+              ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-primary-500'
+              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500'
+          "
           :disabled="loading"
           maxlength="500"
-        >
+        />
         <button
           type="submit"
           :disabled="loading || !concept.trim()"
           class="px-5 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2 flex-shrink-0"
         >
           <svg v-if="!loading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <div v-else class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           {{ loading ? '辩论中...' : '开始辩论' }}
@@ -190,13 +223,15 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { startDebate as apiStartDebate } from '../api/client'
 import { useToast } from '../composables/useToast'
 import { useDarkMode } from '../composables/useDarkMode'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
+const route = useRoute()
 const { isDark } = useDarkMode()
 const toast = useToast()
 
@@ -205,7 +240,7 @@ const messages = ref([])
 const loading = ref(false)
 const error = ref('')
 const messagesContainer = ref(null)
-const currentRound = ref(0)
+const _currentRound = ref(0)
 
 // 推荐辩论主题
 const suggestedTopics = [
@@ -216,7 +251,7 @@ const suggestedTopics = [
   '递归与迭代',
   '贝叶斯定理',
   '操作系统进程调度',
-  '深度学习反向传播',
+  '深度学习反向传播'
 ]
 
 // 加载状态提示
@@ -238,7 +273,7 @@ const loadingHint = computed(() => {
     Analyst: '正在深入分析概念的本质结构和核心原理...',
     QuizMaster: '正在从出题者角度分析易错点和考察重点...',
     CardMaker: '正在设计记忆策略和学习方法...',
-    Summary: '正在综合三位专家的观点撰写总结...',
+    Summary: '正在综合三位专家的观点撰写总结...'
   }
   return hints[loadingAgentName.value] || '正在思考...'
 })
@@ -248,7 +283,7 @@ const loadingAvatarClass = computed(() => {
     Analyst: 'bg-blue-500',
     QuizMaster: 'bg-amber-500',
     CardMaker: 'bg-emerald-500',
-    Summary: 'bg-purple-500',
+    Summary: 'bg-purple-500'
   }
   return classes[loadingAgentName.value] || 'bg-gray-500'
 })
@@ -258,7 +293,7 @@ const loadingSpinnerClass = computed(() => {
     Analyst: 'border-blue-200',
     QuizMaster: 'border-amber-200',
     CardMaker: 'border-emerald-200',
-    Summary: 'border-purple-200',
+    Summary: 'border-purple-200'
   }
   return classes[loadingAgentName.value] || 'border-gray-200'
 })
@@ -271,7 +306,7 @@ const agentConfig = {
     avatarBg: 'bg-blue-500',
     cardBg: 'bg-blue-50 dark:bg-blue-900/10',
     cardBorder: 'border-blue-200 dark:border-blue-800/50',
-    badgeBg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    badgeBg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
   },
   QuizMaster: {
     role: '出题官',
@@ -279,7 +314,7 @@ const agentConfig = {
     avatarBg: 'bg-amber-500',
     cardBg: 'bg-amber-50 dark:bg-amber-900/10',
     cardBorder: 'border-amber-200 dark:border-amber-800/50',
-    badgeBg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    badgeBg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
   },
   CardMaker: {
     role: '记忆大师',
@@ -287,7 +322,7 @@ const agentConfig = {
     avatarBg: 'bg-emerald-500',
     cardBg: 'bg-emerald-50 dark:bg-emerald-900/10',
     cardBorder: 'border-emerald-200 dark:border-emerald-800/50',
-    badgeBg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    badgeBg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
   },
   Summary: {
     role: '总结员',
@@ -295,8 +330,8 @@ const agentConfig = {
     avatarBg: 'bg-purple-500',
     cardBg: 'bg-purple-50 dark:bg-purple-900/10',
     cardBorder: 'border-purple-200 dark:border-purple-800/50',
-    badgeBg: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  },
+    badgeBg: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+  }
 }
 
 function messageCardClass(msg) {
@@ -317,7 +352,7 @@ function avatarLabel(msg) {
 
 function badgeClass(msg) {
   const cfg = agentConfig[msg.agent_name]
-  return cfg ? cfg.badgeBg : (isDark.value ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600')
+  return cfg ? cfg.badgeBg : isDark.value ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
 }
 
 function roundLabel(round) {
@@ -330,11 +365,41 @@ function renderMarkdown(text) {
   if (!text) return ''
   const html = marked.parse(text)
   return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['h1','h2','h3','h4','h5','h6','p','br','strong','em','u','s','del',
-      'ul','ol','li','a','code','pre','blockquote','table','thead','tbody','tr','th','td',
-      'span','div','hr','sub','sup'],
-    ALLOWED_ATTR: ['href','target','rel','class','id'],
-    ALLOW_DATA_ATTR: false,
+    ALLOWED_TAGS: [
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'p',
+      'br',
+      'strong',
+      'em',
+      'u',
+      's',
+      'del',
+      'ul',
+      'ol',
+      'li',
+      'a',
+      'code',
+      'pre',
+      'blockquote',
+      'table',
+      'thead',
+      'tbody',
+      'tr',
+      'th',
+      'td',
+      'span',
+      'div',
+      'hr',
+      'sub',
+      'sup'
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'id'],
+    ALLOW_DATA_ATTR: false
   })
 }
 
@@ -348,7 +413,7 @@ function scrollToBottom() {
 }
 
 // 模拟逐轮加载状态
-const loadingAgents = ['Analyst', 'QuizMaster', 'CardMaker', 'Summary']
+const _loadingAgents = ['Analyst', 'QuizMaster', 'CardMaker', 'Summary']
 
 function simulateRoundProgress() {
   // 基于当前消息数量推断正在加载的轮次
@@ -366,6 +431,12 @@ function simulateRoundProgress() {
     loadingRound.value = 4
     loadingAgentName.value = 'Summary'
   }
+}
+
+// 选择推荐主题并开始辩论
+function selectTopic(topic) {
+  concept.value = topic
+  startDebate()
 }
 
 // 发起辩论
@@ -398,7 +469,7 @@ async function startDebate() {
         scrollToBottom()
         // 每条消息之间短暂延迟，营造逐步展开效果
         if (i < data.messages.length - 1) {
-          await new Promise(r => setTimeout(r, 300))
+          await new Promise((r) => setTimeout(r, 300))
         }
       }
     }
@@ -424,9 +495,20 @@ function resetDebate() {
 }
 
 // 监听消息变化自动滚动
-watch(messages, () => {
-  scrollToBottom()
-}, { deep: true })
+watch(
+  messages,
+  () => {
+    scrollToBottom()
+  },
+  { deep: true }
+)
+
+onMounted(() => {
+  // 从 URL 查询参数读取概念（知识洞察"深入学习"跳转）
+  if (route.query.concept) {
+    concept.value = route.query.concept
+  }
+})
 </script>
 
 <style scoped>
@@ -456,9 +538,15 @@ watch(messages, () => {
   margin-bottom: 0.5em;
   font-weight: 600;
 }
-:deep(.debate-content h1) { font-size: 1.25em; }
-:deep(.debate-content h2) { font-size: 1.125em; }
-:deep(.debate-content h3) { font-size: 1em; }
+:deep(.debate-content h1) {
+  font-size: 1.25em;
+}
+:deep(.debate-content h2) {
+  font-size: 1.125em;
+}
+:deep(.debate-content h3) {
+  font-size: 1em;
+}
 :deep(.debate-content p) {
   margin-bottom: 0.5em;
   line-height: 1.7;

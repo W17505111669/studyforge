@@ -11,7 +11,7 @@
             width: spotlightRect.width + 'px',
             height: spotlightRect.height + 'px',
             borderRadius: spotlightRect.radius + 'px',
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)'
           }"
         ></div>
 
@@ -24,7 +24,7 @@
             width: spotlightRect.width + 8 + 'px',
             height: spotlightRect.height + 8 + 'px',
             boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.2), 0 0 20px rgba(99, 102, 241, 0.3)',
-            animation: 'onboarding-pulse 2s ease-in-out infinite',
+            animation: 'onboarding-pulse 2s ease-in-out infinite'
           }"
         ></div>
 
@@ -38,16 +38,16 @@
         <!-- 下方 -->
         <div
           class="absolute left-0 right-0 bottom-0 cursor-pointer"
-          :style="{ top: (spotlightRect.y + spotlightRect.height + 4) + 'px' }"
+          :style="{ top: spotlightRect.y + spotlightRect.height + 4 + 'px' }"
           @click="skipOnboarding"
         ></div>
         <!-- 左侧 -->
         <div
           class="absolute left-0 cursor-pointer"
           :style="{
-            top: (spotlightRect.y - 4) + 'px',
+            top: spotlightRect.y - 4 + 'px',
             width: Math.max(0, spotlightRect.x - 4) + 'px',
-            height: (spotlightRect.height + 8) + 'px',
+            height: spotlightRect.height + 8 + 'px'
           }"
           @click="skipOnboarding"
         ></div>
@@ -55,9 +55,9 @@
         <div
           class="absolute right-0 cursor-pointer"
           :style="{
-            top: (spotlightRect.y - 4) + 'px',
-            left: (spotlightRect.x + spotlightRect.width + 4) + 'px',
-            height: (spotlightRect.height + 8) + 'px',
+            top: spotlightRect.y - 4 + 'px',
+            left: spotlightRect.x + spotlightRect.width + 4 + 'px',
+            height: spotlightRect.height + 8 + 'px'
           }"
           @click="skipOnboarding"
         ></div>
@@ -69,7 +69,9 @@
             class="absolute z-10 w-[360px] max-w-[calc(100vw-32px)] transition-all duration-500"
             :style="tooltipStyle"
           >
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div
+              class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
               <!-- 顶部装饰条 -->
               <div class="h-1 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500"></div>
 
@@ -80,11 +82,13 @@
                     v-for="(s, i) in totalSteps"
                     :key="i"
                     class="h-1.5 rounded-full transition-all duration-300"
-                    :class="i === currentStep
-                      ? 'bg-primary-500 w-6'
-                      : i < currentStep
-                        ? 'bg-primary-300 dark:bg-primary-700 w-3'
-                        : 'bg-gray-300 dark:bg-gray-600 w-3'"
+                    :class="
+                      i === currentStep
+                        ? 'bg-primary-500 w-6'
+                        : i < currentStep
+                          ? 'bg-primary-300 dark:bg-primary-700 w-3'
+                          : 'bg-gray-300 dark:bg-gray-600 w-3'
+                    "
                   ></span>
                   <span class="ml-auto text-xs text-gray-400 dark:text-gray-500 font-mono">
                     {{ currentStep + 1 }}/{{ totalSteps }}
@@ -93,8 +97,10 @@
 
                 <!-- 步骤图标 + 标题 -->
                 <div class="flex items-start gap-3 mb-3">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    :class="stepIconClass">
+                  <div
+                    class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    :class="stepIconClass"
+                  >
                     <span class="text-lg" v-html="stepIcon"></span>
                   </div>
                   <div>
@@ -112,25 +118,27 @@
                 <!-- 操作按钮 -->
                 <div class="flex items-center gap-2">
                   <button
-                    @click="skipOnboarding"
                     class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    @click="skipOnboarding"
                   >
                     跳过引导
                   </button>
                   <div class="flex-1"></div>
                   <button
                     v-if="!isFirstStep"
-                    @click="prevStep"
                     class="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    @click="prevStep"
                   >
                     上一步
                   </button>
                   <button
-                    @click="nextStep"
                     class="px-4 py-1.5 text-sm font-medium text-white rounded-lg transition-all"
-                    :class="isLastStep
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-md shadow-green-500/20'
-                      : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-md shadow-primary-500/20'"
+                    :class="
+                      isLastStep
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-md shadow-green-500/20'
+                        : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-md shadow-primary-500/20'
+                    "
+                    @click="nextStep"
                   >
                     {{ isLastStep ? '开始学习' : '下一步' }}
                     <span v-if="!isLastStep" class="ml-1">&rarr;</span>
@@ -165,7 +173,7 @@ const {
   isLastStep,
   nextStep,
   prevStep,
-  skipOnboarding,
+  skipOnboarding
 } = useOnboarding()
 
 const spotlightRect = ref({ x: 0, y: 0, width: 0, height: 0, radius: 8 })
@@ -175,13 +183,13 @@ const arrowDirection = ref('left')
 const stepIcons = [
   '<svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>',
   '<svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zm-2 4a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/></svg>',
-  '<svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd"/></svg>',
+  '<svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd"/></svg>'
 ]
 
 const stepIconClasses = [
   'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
-  'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+  'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
 ]
 
 const stepIcon = computed(() => stepIcons[currentStep.value] || stepIcons[0])
@@ -196,7 +204,7 @@ const tooltipTransition = computed(() => {
 
 const tooltipStyle = computed(() => ({
   left: tooltipPos.value.x + 'px',
-  top: tooltipPos.value.y + 'px',
+  top: tooltipPos.value.y + 'px'
 }))
 
 const arrowStyle = computed(() => {
@@ -243,11 +251,11 @@ function updatePosition() {
       y: window.innerHeight / 2 - 30,
       width: 200,
       height: 60,
-      radius: 8,
+      radius: 8
     }
     tooltipPos.value = {
       x: window.innerWidth / 2 - 180,
-      y: window.innerHeight / 2 + 50,
+      y: window.innerHeight / 2 + 50
     }
     arrowDirection.value = 'top'
     return
@@ -263,7 +271,7 @@ function updatePosition() {
     y: rect.top - padding,
     width: rect.width + padding * 2,
     height: rect.height + padding * 2,
-    radius: 10,
+    radius: 10
   }
 
   // Determine tooltip position based on preferred direction
@@ -274,25 +282,25 @@ function updatePosition() {
   if (preferred === 'right' && rect.right + tooltipWidth + 24 < vw) {
     tooltipPos.value = {
       x: rect.right + padding + 12,
-      y: Math.max(16, Math.min(rect.top - padding, vh - tooltipHeight - 16)),
+      y: Math.max(16, Math.min(rect.top - padding, vh - tooltipHeight - 16))
     }
     arrowDirection.value = 'left'
   } else if (preferred === 'left' && rect.left - tooltipWidth - 24 > 0) {
     tooltipPos.value = {
       x: rect.left - padding - 12 - tooltipWidth,
-      y: Math.max(16, Math.min(rect.top - padding, vh - tooltipHeight - 16)),
+      y: Math.max(16, Math.min(rect.top - padding, vh - tooltipHeight - 16))
     }
     arrowDirection.value = 'right'
   } else if (rect.bottom + tooltipHeight + 24 < vh) {
     tooltipPos.value = {
       x: Math.max(16, Math.min(rect.left - 20, vw - tooltipWidth - 16)),
-      y: rect.bottom + padding + 12,
+      y: rect.bottom + padding + 12
     }
     arrowDirection.value = 'top'
   } else {
     tooltipPos.value = {
       x: Math.max(16, Math.min(rect.left - 20, vw - tooltipWidth - 16)),
-      y: Math.max(16, rect.top - padding - 12 - tooltipHeight),
+      y: Math.max(16, rect.top - padding - 12 - tooltipHeight)
     }
     arrowDirection.value = 'bottom'
   }
@@ -372,11 +380,16 @@ defineExpose({ updatePosition })
 
 <style>
 @keyframes onboarding-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 0 20px rgba(99, 102, 241, 0.15);
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px rgba(99, 102, 241, 0.2),
+      0 0 20px rgba(99, 102, 241, 0.15);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.3), 0 0 30px rgba(99, 102, 241, 0.25);
+    box-shadow:
+      0 0 0 6px rgba(99, 102, 241, 0.3),
+      0 0 30px rgba(99, 102, 241, 0.25);
   }
 }
 </style>

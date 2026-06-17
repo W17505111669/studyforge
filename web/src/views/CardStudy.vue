@@ -5,12 +5,12 @@
       <div class="flex items-center justify-between mb-3">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">学习模式</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            滑动切换 · 点击翻转 · 键盘 1/2/3 快捷评价
-          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">滑动切换 · 点击翻转 · 键盘 1/2/3 快捷评价</p>
         </div>
-        <router-link to="/cards"
-          class="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+        <router-link
+          to="/cards"
+          class="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -30,8 +30,10 @@
           <span class="text-primary-600 dark:text-primary-400 font-semibold tabular-nums">{{ currentIndex + 1 }}</span>
           <span class="text-gray-400 dark:text-gray-500">/</span>
           <span class="text-gray-500 dark:text-gray-400 tabular-nums">{{ totalDisplay }}</span>
-          <span v-if="dueDisplayCount > 0"
-            class="px-2 py-0.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-xs font-medium">
+          <span
+            v-if="dueDisplayCount > 0"
+            class="px-2 py-0.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-xs font-medium"
+          >
             {{ dueDisplayCount }} 待复习
           </span>
         </div>
@@ -43,25 +45,48 @@
       <div class="flex flex-col items-center gap-3">
         <svg class="animate-spin w-8 h-8 text-primary-500" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
         </svg>
         <span class="text-sm text-gray-400 dark:text-gray-500">加载卡片中...</span>
       </div>
     </div>
 
     <!-- All done -->
-    <div v-else-if="cards.length === 0 || currentIndex >= cards.length" class="flex-1 flex items-center justify-center p-6">
+    <div
+      v-else-if="cards.length === 0 || currentIndex >= cards.length"
+      class="flex-1 flex items-center justify-center p-6"
+    >
       <div class="text-center max-w-md">
-        <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-emerald-100 to-green-50 dark:from-emerald-900/40 dark:to-green-800/30 rounded-full flex items-center justify-center">
-          <svg class="w-12 h-12 text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div
+          class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-emerald-100 to-green-50 dark:from-emerald-900/40 dark:to-green-800/30 rounded-full flex items-center justify-center"
+        >
+          <svg
+            class="w-12 h-12 text-emerald-500 dark:text-emerald-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         </div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           {{ reviewedCount > 0 ? '本轮复习完成！' : '今天都复习完了' }}
         </h2>
         <p class="text-gray-500 dark:text-gray-400 mb-2">
-          {{ reviewedCount > 0 ? `本轮复习了 ${reviewedCount} 张卡片，继续保持！` : '所有卡片都已掌握或暂无卡片，休息一下吧' }}
+          {{
+            reviewedCount > 0
+              ? `本轮复习了 ${reviewedCount} 张卡片，继续保持！`
+              : '所有卡片都已掌握或暂无卡片，休息一下吧'
+          }}
         </p>
         <!-- Review stats -->
         <div v-if="reviewedCount > 0" class="flex justify-center gap-6 mb-6 text-sm">
@@ -79,12 +104,16 @@
           </div>
         </div>
         <div class="flex gap-3 justify-center">
-          <button @click="restart"
-            class="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm">
+          <button
+            class="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
+            @click="restart"
+          >
             再来一轮
           </button>
-          <router-link to="/cards"
-            class="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <router-link
+            to="/cards"
+            class="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
             返回卡片库
           </router-link>
         </div>
@@ -92,7 +121,10 @@
     </div>
 
     <!-- Study Area -->
-    <div v-else class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pb-4 overflow-hidden select-none">
+    <div
+      v-else
+      class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pb-4 overflow-hidden select-none"
+    >
       <!-- Card container with touch/swipe -->
       <div
         ref="cardContainerRef"
@@ -103,11 +135,13 @@
         @touchend="onTouchEnd"
       >
         <!-- Decorative stack behind -->
-        <div v-if="currentIndex + 1 < cards.length"
+        <div
+          v-if="currentIndex + 1 < cards.length"
           class="absolute inset-0 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 scale-[0.96] translate-y-2 opacity-60 pointer-events-none"
           style="z-index: 0"
         ></div>
-        <div v-if="currentIndex + 2 < cards.length"
+        <div
+          v-if="currentIndex + 2 < cards.length"
           class="absolute inset-0 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 scale-[0.92] translate-y-4 opacity-30 pointer-events-none"
           style="z-index: 0"
         ></div>
@@ -121,32 +155,45 @@
         >
           <div class="flip-card-inner">
             <!-- ====== FRONT ====== -->
-            <div class="flip-card-front bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 flex flex-col">
+            <div
+              class="flip-card-front bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 flex flex-col"
+            >
               <div class="flex items-start justify-between mb-4">
                 <span class="px-2.5 py-1 rounded-lg text-xs font-semibold" :class="diffClass(currentCard.difficulty)">
                   {{ diffLabel(currentCard.difficulty) }}
                 </span>
                 <div class="flex items-center gap-1.5">
-                  <span v-if="currentCard.review_count > 0"
-                    class="text-xs px-2 py-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg font-medium">
+                  <span
+                    v-if="currentCard.review_count > 0"
+                    class="text-xs px-2 py-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg font-medium"
+                  >
                     复习 {{ currentCard.review_count }}次
                   </span>
-                  <span v-else
-                    class="text-xs px-2 py-1 bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg font-medium">
+                  <span
+                    v-else
+                    class="text-xs px-2 py-1 bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg font-medium"
+                  >
                     新卡片
                   </span>
                 </div>
               </div>
 
               <div class="flex-1 flex flex-col justify-center">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 text-center leading-relaxed"
-                  v-html="renderMath(currentCard.concept)">
-                </h2>
+                <h2
+                  class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 text-center leading-relaxed"
+                  v-html="renderMath(currentCard.concept)"
+                ></h2>
               </div>
 
-              <div v-if="currentCard.tags && currentCard.tags.length" class="flex flex-wrap gap-1.5 justify-center mt-4">
-                <span v-for="tag in currentCard.tags" :key="tag"
-                  class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs">
+              <div
+                v-if="currentCard.tags && currentCard.tags.length"
+                class="flex flex-wrap gap-1.5 justify-center mt-4"
+              >
+                <span
+                  v-for="tag in currentCard.tags"
+                  :key="tag"
+                  class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs"
+                >
                   {{ tag }}
                 </span>
               </div>
@@ -155,31 +202,49 @@
             </div>
 
             <!-- ====== BACK ====== -->
-            <div class="flip-card-back bg-gradient-to-br from-primary-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-xl border border-primary-100 dark:border-gray-600 p-6 sm:p-8 flex flex-col">
-              <h3 class="text-base sm:text-lg font-bold text-primary-700 dark:text-primary-400 mb-3"
-                v-html="renderMath(currentCard.concept)">
-              </h3>
+            <div
+              class="flip-card-back bg-gradient-to-br from-primary-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-xl border border-primary-100 dark:border-gray-600 p-6 sm:p-8 flex flex-col"
+            >
+              <h3
+                class="text-base sm:text-lg font-bold text-primary-700 dark:text-primary-400 mb-3"
+                v-html="renderMath(currentCard.concept)"
+              ></h3>
 
               <div class="flex-1 overflow-y-auto pr-1 -mr-1 custom-scroll">
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"
-                  v-html="renderMath(currentCard.detail)">
-                </p>
+                <p
+                  class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"
+                  v-html="renderMath(currentCard.detail)"
+                ></p>
 
-                <div v-if="currentCard.formula"
-                  class="mt-3 p-3 bg-white/80 dark:bg-gray-700/80 rounded-xl border border-primary-100 dark:border-gray-600">
+                <div
+                  v-if="currentCard.formula"
+                  class="mt-3 p-3 bg-white/80 dark:bg-gray-700/80 rounded-xl border border-primary-100 dark:border-gray-600"
+                >
                   <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">关键公式/代码</p>
-                  <code class="text-sm text-primary-600 dark:text-primary-400 whitespace-pre-wrap break-all" v-html="renderMath(currentCard.formula)"></code>
+                  <code
+                    class="text-sm text-primary-600 dark:text-primary-400 whitespace-pre-wrap break-all"
+                    v-html="renderMath(currentCard.formula)"
+                  ></code>
                 </div>
 
-                <div v-if="currentCard.memory_tip"
-                  class="mt-3 p-3 bg-amber-50/80 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800">
+                <div
+                  v-if="currentCard.memory_tip"
+                  class="mt-3 p-3 bg-amber-50/80 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800"
+                >
                   <p class="text-xs text-amber-600 dark:text-amber-400 mb-1">记忆技巧</p>
-                  <p class="text-sm text-amber-800 dark:text-amber-300 leading-relaxed" v-html="renderMath(currentCard.memory_tip)"></p>
+                  <p
+                    class="text-sm text-amber-800 dark:text-amber-300 leading-relaxed"
+                    v-html="renderMath(currentCard.memory_tip)"
+                  ></p>
                 </div>
               </div>
 
-              <div class="mt-3 pt-2 border-t border-primary-100/50 dark:border-gray-600 flex justify-between text-xs text-gray-400 dark:text-gray-500">
-                <span>间隔 {{ currentCard.interval_days || 0 }}天 · 系数 {{ (currentCard.ease_factor || 2.5).toFixed(1) }}</span>
+              <div
+                class="mt-3 pt-2 border-t border-primary-100/50 dark:border-gray-600 flex justify-between text-xs text-gray-400 dark:text-gray-500"
+              >
+                <span>
+                  间隔 {{ currentCard.interval_days || 0 }}天 · 系数 {{ (currentCard.ease_factor || 2.5).toFixed(1) }}
+                </span>
                 <span v-if="currentCard.next_review_at">下次: {{ fmtDate(currentCard.next_review_at) }}</span>
                 <span v-else>尚未复习</span>
               </div>
@@ -192,9 +257,9 @@
       <div class="hidden sm:flex items-center justify-between w-full max-w-xl mx-auto mt-4 pointer-events-none">
         <button
           v-if="currentIndex > 0"
-          @click="nav(-1)"
           class="pointer-events-auto p-2.5 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
           title="上一张 (←)"
+          @click="nav(-1)"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -204,15 +269,17 @@
 
         <span class="text-xs text-gray-400 dark:text-gray-500">
           <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-[10px] font-mono">←</kbd>
-          <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-[10px] font-mono ml-1">→</kbd>
+          <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-[10px] font-mono ml-1">
+            →
+          </kbd>
           切换
         </span>
 
         <button
           v-if="currentIndex + 1 < cards.length"
-          @click="nav(1)"
           class="pointer-events-auto p-2.5 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
           title="下一张 (→)"
+          @click="nav(1)"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -224,12 +291,9 @@
       <!-- Action buttons -->
       <div class="flex gap-3 sm:gap-4 mt-5 sm:mt-6 w-full max-w-md mx-auto">
         <button
-          @click="submitReview('review')"
           :disabled="reviewing"
-          class="flex-1 py-3 sm:py-3.5 rounded-xl text-sm font-semibold transition-all
-            bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800
-            text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30
-            active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          class="flex-1 py-3 sm:py-3.5 rounded-xl text-sm font-semibold transition-all bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          @click="submitReview('review')"
         >
           <span class="block text-lg sm:hidden">✗</span>
           <span class="hidden sm:inline">不熟</span>
@@ -237,12 +301,9 @@
         </button>
 
         <button
-          @click="markFuzzy"
           :disabled="reviewing"
-          class="flex-1 py-3 sm:py-3.5 rounded-xl text-sm font-semibold transition-all
-            bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800
-            text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30
-            active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          class="flex-1 py-3 sm:py-3.5 rounded-xl text-sm font-semibold transition-all bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          @click="markFuzzy"
         >
           <span class="block text-lg sm:hidden">~</span>
           <span class="hidden sm:inline">模糊</span>
@@ -250,12 +311,9 @@
         </button>
 
         <button
-          @click="submitReview('mastered')"
           :disabled="reviewing"
-          class="flex-1 py-3 sm:py-3.5 rounded-xl text-sm font-semibold transition-all
-            bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800
-            text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30
-            active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          class="flex-1 py-3 sm:py-3.5 rounded-xl text-sm font-semibold transition-all bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          @click="submitReview('mastered')"
         >
           <span class="block text-lg sm:hidden">✓</span>
           <span class="hidden sm:inline">掌握</span>
@@ -299,7 +357,7 @@ const currentCard = computed(() => cards.value[currentIndex.value] || {})
 
 const dueCards = computed(() => {
   const now = new Date()
-  return cards.value.filter(c => {
+  return cards.value.filter((c) => {
     if (!c.next_review_at) return true
     return new Date(c.next_review_at) <= now
   })
@@ -311,26 +369,28 @@ const totalDisplay = computed(() => Math.min(cards.value.length, 999))
 
 const progressPct = computed(() => {
   if (cards.value.length === 0) return 0
-  return Math.min(((currentIndex.value) / cards.value.length) * 100, 100)
+  return Math.min((currentIndex.value / cards.value.length) * 100, 100)
 })
 
-const reviewedCount = computed(() =>
-  reviewStats.value.mastered + reviewStats.value.unfamiliar + reviewStats.value.fuzzy
+const reviewedCount = computed(
+  () => reviewStats.value.mastered + reviewStats.value.unfamiliar + reviewStats.value.fuzzy
 )
 
 // ── Swipe style ──
 const cardStyle = computed(() => ({
   transform: cardTransform.value,
-  transition: cardTransition.value ? 'transform 0.1s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+  transition: cardTransition.value ? 'transform 0.1s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
 }))
 
 // ── Helpers ──
 function diffClass(d) {
-  return {
-    easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    hard: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  }[d] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+  return (
+    {
+      easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+      hard: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    }[d] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+  )
 }
 
 function diffLabel(d) {
@@ -501,9 +561,9 @@ async function loadCards() {
   loading.value = true
   try {
     const res = await listCards({ limit: 200 })
-    const all = (res.data.data || []).map(c => ({
+    const all = (res.data.data || []).map((c) => ({
       ...c,
-      tags: typeof c.tags === 'string' && c.tags ? c.tags.split(',').map(t => t.trim()) : [],
+      tags: typeof c.tags === 'string' && c.tags ? c.tags.split(',').map((t) => t.trim()) : []
     }))
     // Sort: due cards first, then by next_review_at
     const now = new Date()
@@ -594,5 +654,18 @@ onUnmounted(() => {
 /* KaTeX 暗色模式适配 */
 :deep(.katex) {
   color: inherit;
+}
+
+/* 卡片内嵌图片样式 */
+:deep(.card-image) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+  border: 1px solid #e5e7eb;
+}
+:deep(.dark .card-image) {
+  border-color: #4b5563;
+  box-shadow: 0 0 0 1px rgba(75, 85, 99, 0.3);
 }
 </style>

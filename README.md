@@ -267,6 +267,22 @@ docker-compose up -d
 > 除 `/api/register`、`/api/login`、`/api/health` 外，所有端点均需在请求头携带 `Authorization: Bearer <token>`。
 > 应用内 `/api-docs` 页面提供完整的交互式 API 文档。
 
+### Swagger API 文档
+
+项目集成了 [Swaggo](https://github.com/swaggo/swag) 自动生成 OpenAPI/Swagger 文档：
+
+- **Swagger UI**: 启动后访问 `http://localhost:8080/api/swagger/index.html`
+- **OpenAPI JSON**: `http://localhost:8080/api/swagger/doc.json`
+- **应用内文档**: 前端 `/api-docs` 页面从 OpenAPI 规范动态加载，支持 Try it out
+
+开发时修改 handler 注释后需重新生成文档：
+
+```bash
+swag init -g main.go -o docs --parseDependency --parseInternal
+```
+
+CI 流水线已包含 `swag init` 步骤，确保文档与代码同步。
+
 ## 项目结构
 
 ```
@@ -278,6 +294,10 @@ studyforge-pro/
 ├── Dockerfile                      # 多阶段 Docker 构建
 ├── docker-compose.yml              # 编排应用 + Qdrant
 ├── .gitignore
+├── docs/                           # Swagger 自动生成的 OpenAPI 文档
+│   ├── docs.go                     #   Go 包入口（嵌入 swagger.json）
+│   ├── swagger.json                #   OpenAPI JSON 规范
+│   └── swagger.yaml                #   OpenAPI YAML 规范
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                  # GitHub Actions CI/CD
@@ -294,7 +314,8 @@ studyforge-pro/
 │   │   ├── llm.go                  #   LLM 客户端（同步 + 流式）
 │   │   └── tools.go                #   Function Calling 工具定义
 │   ├── database/
-│   │   └── database.go             #   SQLite 初始化 + GORM 自动迁移
+│   │   ├── database.go             #   SQLite 初始化 + GORM 自动迁移 + 慢查询日志
+│   │   └── indexes.go              #   复合索引定义（15 个高频查询优化索引）
 │   ├── eval/
 │   │   └── judge.go                #   LLM-as-Judge 质量评估
 │   ├── handler/                    # HTTP 请求处理器
@@ -310,6 +331,7 @@ studyforge-pro/
 │   │   ├── mistake.go              #   错题本 + 巩固强化
 │   │   ├── notification.go         #   通知系统（惰性生成）
 │   │   ├── seed.go                 #   演示数据生成
+│   │   ├── admin.go                #   数据库诊断（表统计 + 索引列表）
 │   │   ├── ws.go                   #   WebSocket 推送
 │   │   ├── fileparser.go           #   文件解析（PDF / DOCX / MD / TXT）
 │   │   ├── handler_test.go         #   Handler 层测试（16 用例）
@@ -440,6 +462,41 @@ cd web && npm run build
 配置优先级：**环境变量** > **config.yaml** > **内置默认值**
 
 启动时自动校验必需配置（LLM API Key、JWT Secret 等），缺失时输出友好错误提示和修复建议。
+
+## 数据库索引策略
+
+项目使用 GORM AutoMigrate 自动创建单列索引（通过 struct tag `gorm:"index"`），同时在 `internal/database/indexes.go` 中定义了 15 个复合索引，针对高频查询模式进行优化。
+
+### 复合索引列表
+
+| 表名 | 索引名 | 列 | 优化场景 |
+|------|--------|-----|---------|
+| cards | idx_cards_user_next_review | (user_id, next_review_at) | 待复习卡片查询 |
+| cards | idx_cards_user_material | (user_id, material_id) | 材料关联卡片查询 |
+| cards | idx_cards_user_bookmarked | (user_id, is_bookmarked) | 书签过滤 |
+| quizzes | idx_quizzes_user_material | (user_id, material_id) | 材料关联题目查询 |
+| quizzes | idx_quizzes_user_created | (user_id, created_at) | 题目时间排序 |
+| quiz_attempts | idx_quiz_attempts_user_quiz | (user_id, quiz_id) | 答题历史查询 |
+| quiz_attempts | idx_quiz_attempts_user_created | (user_id, created_at) | 答题时间排序 |
+| chat_messages | idx_chat_messages_conv_created | (conversation_id, created_at) | 对话消息加载 |
+| conversations | idx_conversations_user_updated | (user_id, updated_at) | 对话列表排序 |
+| materials | idx_materials_user_status | (user_id, status) | 材料状态过滤 |
+| materials | idx_materials_user_created | (user_id, created_at) | 材料时间排序 |
+| notifications | idx_notifications_user_read | (user_id, read_at) | 未读通知查询 |
+| pomodoro_sessions | idx_pomodoro_user_started | (user_id, started_at) | 专注统计 |
+| quiz_mistakes | idx_mistakes_user_reviewed | (user_id, reviewed) | 错题本状态过滤 |
+| daily_tasks | idx_daily_tasks_user_date | (user_id, task_date) | 每日任务查询 |
+| learning_goals | idx_goals_user_status | (user_id, status) | 学习目标过滤 |
+
+所有索引均使用 `CREATE INDEX IF NOT EXISTS` 语法，支持幂等执行（重复运行不会报错）。索引在应用启动时 AutoMigrate 之后自动创建。
+
+### 慢查询日志
+
+GORM Logger 配置了 200ms 慢查询阈值，超过此时间的查询会在控制台输出警告日志。可通过环境变量 `DB_LOG_LEVEL=info` 切换为完整 SQL 日志模式（记录所有查询，用于开发调试）。
+
+### 数据库诊断端点
+
+`GET /api/admin/db-stats`（需认证）返回数据库统计信息：各表行数、索引列表（含列信息和唯一性）、数据库文件大小。适用于开发阶段的性能排查。
 
 ## 贡献指南
 

@@ -1,0 +1,738 @@
+basePath: /api
+definitions:
+  handler.ChatRequest:
+    properties:
+      conversation_id:
+        description: 可选：指定对话会话（不传则自动创建）
+        type: string
+      material_id:
+        description: 可选：关联材料上下文
+        type: string
+      message:
+        maxLength: 10000
+        type: string
+    required:
+    - message
+    type: object
+  handler.ReviewCardRequest:
+    properties:
+      result:
+        description: '"mastered" 或 "review"'
+        type: string
+    required:
+    - result
+    type: object
+  model.AnswerRequest:
+    properties:
+      answer:
+        type: string
+      hints_used:
+        description: 使用的提示数量
+        type: integer
+    required:
+    - answer
+    type: object
+  model.Card:
+    properties:
+      concept:
+        description: 核心概念（一句话）
+        type: string
+      created_at:
+        type: string
+      detail:
+        description: 详细解释
+        type: string
+      difficulty:
+        description: easy, medium, hard
+        type: string
+      ease_factor:
+        description: SM-2 难度因子（最低 1.3）
+        type: number
+      formula:
+        description: 关键公式/代码（如有）
+        type: string
+      id:
+        type: string
+      interval_days:
+        description: 当前复习间隔（天）
+        type: integer
+      is_bookmarked:
+        description: 是否书签
+        type: boolean
+      last_reviewed_at:
+        description: 上次复习时间
+        type: string
+      material_id:
+        type: string
+      memory_tip:
+        description: 记忆技巧
+        type: string
+      next_review_at:
+        description: 下次复习时间（nil=新卡片，未复习过）
+        type: string
+      review_count:
+        description: 累计复习次数
+        type: integer
+      tags:
+        description: 逗号分隔的标签
+        type: string
+      user_id:
+        type: string
+      user_note:
+        description: 个人笔记
+        type: string
+    type: object
+  model.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  model.Material:
+    properties:
+      analysis_data:
+        description: JSON 格式的分析师输出
+        type: string
+      analyzed_at:
+        type: string
+      cards:
+        description: 关联
+        items:
+          $ref: '#/definitions/model.Card'
+        type: array
+      content:
+        description: 原文内容
+        type: string
+      content_type:
+        description: '"text", "pdf", "url"'
+        type: string
+      created_at:
+        type: string
+      graph_data:
+        description: JSON 格式的图谱数据
+        type: string
+      id:
+        type: string
+      is_public:
+        description: 是否公开到市场
+        type: boolean
+      quizzes:
+        items:
+          $ref: '#/definitions/model.Quiz'
+        type: array
+      share_code:
+        description: 分享码（公开时生成）
+        type: string
+      source_url:
+        description: 来源 URL（如有）
+        type: string
+      status:
+        description: pending, analyzing, completed, failed
+        type: string
+      tags:
+        description: 自定义标签，逗号分隔（如 "编程,Go,并发"）
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  model.Quiz:
+    properties:
+      answer:
+        type: string
+      created_at:
+        type: string
+      difficulty:
+        description: easy, medium, hard
+        type: string
+      explanation:
+        description: 解析
+        type: string
+      hint_1:
+        description: 第1级提示：概念方向
+        type: string
+      hint_2:
+        description: 第2级提示：关键线索
+        type: string
+      hint_3:
+        description: 第3级提示：接近答案
+        type: string
+      id:
+        type: string
+      material_id:
+        type: string
+      options:
+        description: JSON 格式选项（选择题用）
+        type: string
+      question:
+        type: string
+      type:
+        description: choice, fill, short_answer
+        type: string
+      user_id:
+        type: string
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        type: string
+      nickname:
+        type: string
+      password:
+        maxLength: 128
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  model.UploadRequest:
+    properties:
+      content:
+        type: string
+      content_type:
+        enum:
+        - text
+        - url
+        type: string
+      source_url:
+        type: string
+      tags:
+        description: 自定义标签，逗号分隔
+        type: string
+      title:
+        type: string
+    required:
+    - content_type
+    - title
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: StudyForge Pro
+    url: https://github.com/studyforge-pro
+  description: |-
+    StudyForge Pro 智能学习平台 REST API。支持 AI 分析、间隔重复、流式对话、知识图谱等功能。
+
+    所有认证端点需在 Header 携带 `Authorization: Bearer <token>`。
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: StudyForge Pro API
+  version: "2.0"
+paths:
+  /cards:
+    get:
+      description: 分页获取知识卡片，支持按材料、难度、待复习状态、书签过滤
+      parameters:
+      - description: 每页条数（默认 20）
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      - description: 按材料 ID 过滤
+        in: query
+        name: material_id
+        type: string
+      - description: 按难度过滤（easy/medium/hard）
+        in: query
+        name: difficulty
+        type: string
+      - description: true 时只返回待复习卡片
+        in: query
+        name: due
+        type: boolean
+      - description: true 时只返回已书签卡片
+        in: query
+        name: bookmarked
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 卡片列表
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 卡片列表
+      tags:
+      - 知识卡片
+  /cards/{id}/review:
+    post:
+      consumes:
+      - application/json
+      description: 提交复习结果，基于 SM-2 算法更新间隔天数和难度因子
+      parameters:
+      - description: 卡片 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 复习结果
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ReviewCardRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 复习结果
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 卡片不存在
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 复习卡片（SM-2）
+      tags:
+      - 知识卡片
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: 发送消息并获取 AI 回复，支持 Function Calling 工具调用和 RAG 检索增强
+      parameters:
+      - description: 对话请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: AI 回复
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 对话（非流式）
+      tags:
+      - AI 对话
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: 验证用户名密码，返回 JWT Token 和用户信息
+      parameters:
+      - description: 登录请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户名或密码错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户登录
+      tags:
+      - 认证
+  /materials:
+    get:
+      description: 分页获取当前用户的学习材料列表，支持标签过滤
+      parameters:
+      - description: 每页条数（默认 20，上限 200）
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量（默认 0）
+        in: query
+        name: offset
+        type: integer
+      - description: 按标签过滤
+        in: query
+        name: tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 材料列表
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 材料列表
+      tags:
+      - 材料管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一条文本或 URL 类型的学习材料
+      parameters:
+      - description: 上传请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UploadRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/model.Material'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 创建文本材料
+      tags:
+      - 材料管理
+  /materials/{id}:
+    delete:
+      description: 删除材料及其关联的卡片、练习题和 RAG 向量数据
+      parameters:
+      - description: 材料 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 材料不存在
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除材料
+      tags:
+      - 材料管理
+    get:
+      description: 获取单个材料详情，含关联的知识卡片和练习题
+      parameters:
+      - description: 材料 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 材料详情
+          schema:
+            $ref: '#/definitions/model.Material'
+        "404":
+          description: 材料不存在
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 材料详情
+      tags:
+      - 材料管理
+  /materials/{id}/analyze:
+    post:
+      description: 触发 4 个 Agent 并发分析材料（分析师/出题师/卡片师/图谱师），通过 WebSocket 推送进度
+      parameters:
+      - description: 材料 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: 分析已启动
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 材料不存在
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 触发 AI 分析
+      tags:
+      - 材料管理
+  /materials/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传 PDF/DOCX/MD/TXT 文件（最大 20MB），自动提取文本内容
+      parameters:
+      - description: 上传文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 材料标题
+        in: formData
+        name: title
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 上传成功
+          schema:
+            $ref: '#/definitions/model.Material'
+        "400":
+          description: 文件无效
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 上传文件材料
+      tags:
+      - 材料管理
+  /quizzes:
+    get:
+      description: 分页获取练习题，支持按材料和难度过滤，可选智能推荐模式
+      parameters:
+      - description: 每页条数（默认 20）
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      - description: 按材料 ID 过滤
+        in: query
+        name: material_id
+        type: string
+      - description: 按难度过滤
+        in: query
+        name: difficulty
+        type: string
+      - description: true 时启用智能推荐模式
+        in: query
+        name: recommended
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 题目列表
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 题目列表
+      tags:
+      - 练习题
+  /quizzes/{id}/answer:
+    post:
+      consumes:
+      - application/json
+      description: 提交练习题答案，自动判断正确性并记录答题记录
+      parameters:
+      - description: 题目 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 用户答案
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.AnswerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 答题结果
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 题目不存在
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 提交答案
+      tags:
+      - 练习题
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: 注册新用户账号，密码使用 bcrypt 加密存储，返回 JWT Token
+      parameters:
+      - description: 注册请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 注册成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: 用户名已存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户注册
+      tags:
+      - 认证
+  /search:
+    get:
+      description: 跨材料、卡片、练习题的全文模糊搜索，支持多条件过滤，每类最多返回 20 条
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: q
+        type: string
+      - description: 限定类型（material/card/quiz）
+        in: query
+        name: type
+        type: string
+      - description: 时间范围开始
+        in: query
+        name: date_from
+        type: string
+      - description: 时间范围结束
+        in: query
+        name: date_to
+        type: string
+      - description: 难度过滤
+        in: query
+        name: difficulty
+        type: string
+      - description: 标签过滤（逗号分隔）
+        in: query
+        name: tags
+        type: string
+      - description: 材料状态
+        in: query
+        name: status
+        type: string
+      - description: 限定材料 ID
+        in: query
+        name: material_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 搜索结果
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 全局搜索
+      tags:
+      - 搜索
+  /stats:
+    get:
+      description: 获取用户的学习统计数据（材料数、卡片数、答题数、待复习卡片等）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 统计数据
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 学习统计
+      tags:
+      - 学习统计
+  /tags:
+    get:
+      description: 聚合当前用户所有材料的标签及使用次数
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 标签列表
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取标签列表
+      tags:
+      - 材料管理
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT Bearer Token（格式: Bearer xxx）'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

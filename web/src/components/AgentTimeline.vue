@@ -3,7 +3,12 @@
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         执行时间线
       </h3>
@@ -21,10 +26,18 @@
         <!-- Agent label -->
         <div class="w-20 flex items-center gap-1.5 shrink-0">
           <span class="text-xs">{{ bar.icon }}</span>
-          <span class="text-xs font-medium truncate" :class="bar.done
-            ? (bar.error ? 'text-red-500 dark:text-red-400' : 'text-gray-600 dark:text-gray-400')
-            : 'text-blue-600 dark:text-blue-400'
-          ">{{ bar.label }}</span>
+          <span
+            class="text-xs font-medium truncate"
+            :class="
+              bar.done
+                ? bar.error
+                  ? 'text-red-500 dark:text-red-400'
+                  : 'text-gray-600 dark:text-gray-400'
+                : 'text-blue-600 dark:text-blue-400'
+            "
+          >
+            {{ bar.label }}
+          </span>
         </div>
 
         <!-- Bar track -->
@@ -35,17 +48,19 @@
             :key="tick.time"
             class="absolute top-0 bottom-0 w-px"
             :class="isDark ? 'bg-gray-600/20' : 'bg-gray-200/70'"
-            :style="{ left: (tick.time / timeScale * 100) + '%' }"
+            :style="{ left: (tick.time / timeScale) * 100 + '%' }"
           ></div>
 
           <!-- Agent bar -->
           <div
             class="absolute top-1 bottom-1 rounded-md transition-all duration-500 ease-out flex items-center overflow-hidden"
-            :class="bar.done
-              ? (bar.error
-                ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700'
-                : 'bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700')
-              : 'bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'"
+            :class="
+              bar.done
+                ? bar.error
+                  ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700'
+                  : 'bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700'
+                : 'bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
+            "
             :style="barStyle(bar)"
           >
             <!-- Shimmer overlay for running agents -->
@@ -54,10 +69,16 @@
             <!-- Duration label inside bar -->
             <span
               class="relative text-[10px] font-medium px-2 whitespace-nowrap"
-              :class="bar.done
-                ? (bar.error ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400')
-                : 'text-blue-600 dark:text-blue-400'"
-            >{{ formatDuration(bar.displayDuration) }}</span>
+              :class="
+                bar.done
+                  ? bar.error
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-green-700 dark:text-green-400'
+                  : 'text-blue-600 dark:text-blue-400'
+              "
+            >
+              {{ formatDuration(bar.displayDuration) }}
+            </span>
           </div>
 
           <!-- Pending indicator -->
@@ -85,8 +106,10 @@
           v-for="tick in ticks"
           :key="'l-' + tick.time"
           class="absolute text-[9px] text-gray-400 dark:text-gray-500 -translate-x-1/2 leading-4"
-          :style="{ left: (tick.time / timeScale * 100) + '%' }"
-        >{{ tick.label }}</span>
+          :style="{ left: (tick.time / timeScale) * 100 + '%' }"
+        >
+          {{ tick.label }}
+        </span>
       </div>
       <div class="w-5 shrink-0"></div>
     </div>
@@ -94,15 +117,21 @@
     <!-- Legend -->
     <div class="flex items-center gap-4 mt-3 text-[10px] text-gray-400 dark:text-gray-500">
       <span class="flex items-center gap-1.5">
-        <span class="inline-block w-5 h-2 rounded-sm bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700"></span>
+        <span
+          class="inline-block w-5 h-2 rounded-sm bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700"
+        ></span>
         执行中
       </span>
       <span class="flex items-center gap-1.5">
-        <span class="inline-block w-5 h-2 rounded-sm bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700"></span>
+        <span
+          class="inline-block w-5 h-2 rounded-sm bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700"
+        ></span>
         完成
       </span>
       <span class="flex items-center gap-1.5">
-        <span class="inline-block w-5 h-2 rounded-sm bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700"></span>
+        <span
+          class="inline-block w-5 h-2 rounded-sm bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+        ></span>
         失败
       </span>
     </div>
@@ -119,14 +148,14 @@ const props = defineProps({
   agents: { type: Array, required: true },
   timelineStart: { type: Number, default: 0 },
   agentFinishTimes: { type: Object, default: () => ({}) },
-  analyzing: { type: Boolean, default: false },
+  analyzing: { type: Boolean, default: false }
 })
 
 const agentLabels = {
   Analyst: '分析师',
   QuizMaster: '出题官',
   CardMaker: '卡片师',
-  MapBuilder: '图谱师',
+  MapBuilder: '图谱师'
 }
 
 // Reactive tick for real-time bar growth
@@ -146,13 +175,16 @@ onUnmounted(() => {
 })
 
 // Reset tick timer when analyzing state changes
-watch(() => props.analyzing, (val) => {
-  if (val) {
-    tick.value = Date.now()
+watch(
+  () => props.analyzing,
+  (val) => {
+    if (val) {
+      tick.value = Date.now()
+    }
   }
-})
+)
 
-const allDone = computed(() => props.agents.every(a => a.done))
+const allDone = computed(() => props.agents.every((a) => a.done))
 const anyStarted = computed(() => props.analyzing && props.timelineStart > 0)
 
 const currentElapsed = computed(() => {
@@ -172,7 +204,7 @@ const bars = computed(() => {
   // Reference tick for real-time updates
   const _ = tick.value
 
-  const result = props.agents.map(agent => {
+  const result = props.agents.map((agent) => {
     const key = agent.name.split(' ')[0]
     const label = agentLabels[key] || key
     const icon = agent.icon || '🤖'
@@ -186,13 +218,15 @@ const bars = computed(() => {
       const durationMs = agent.duration || 0
       const startMs = finishTime > 0 ? finishTime - durationMs : 0
       return {
-        key, label, icon,
+        key,
+        label,
+        icon,
         done: true,
         error: agent.error || false,
         started: true,
         startMs,
         endMs: finishTime,
-        displayDuration: durationMs,
+        displayDuration: durationMs
       }
     }
 
@@ -200,13 +234,15 @@ const bars = computed(() => {
     const now = Date.now()
     const elapsed = props.timelineStart ? now - props.timelineStart : 0
     return {
-      key, label, icon,
+      key,
+      label,
+      icon,
       done: false,
       error: false,
       started: true,
       startMs: 0,
       endMs: elapsed,
-      displayDuration: elapsed,
+      displayDuration: elapsed
     }
   })
 
@@ -270,33 +306,27 @@ function barStyle(bar) {
   const width = Math.max(((bar.endMs - bar.startMs) / timeScale.value) * 100, 2.5)
   return {
     left: left + '%',
-    width: width + '%',
+    width: width + '%'
   }
 }
 </script>
 
 <style scoped>
 .shimmer-bg {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: shimmer-move 1.6s ease-in-out infinite;
 }
 .dark .shimmer-bg {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.12) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 50%, transparent 100%);
   background-size: 200% 100%;
 }
 @keyframes shimmer-move {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

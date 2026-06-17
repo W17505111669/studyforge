@@ -220,7 +220,17 @@ func (h *Handler) cleanupStaleMemories() {
 // ==================== 认证相关 ====================
 
 // Register 用户注册
-// POST /api/register
+//
+// @Summary 用户注册
+// @Description 注册新用户账号，密码使用 bcrypt 加密存储，返回 JWT Token
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body model.RegisterRequest true "注册请求"
+// @Success 201 {object} map[string]interface{} "注册成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 409 {object} map[string]interface{} "用户名已存在"
+// @Router /register [post]
 func (h *Handler) Register(c *gin.Context) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -279,7 +289,17 @@ func (h *Handler) Register(c *gin.Context) {
 }
 
 // Login 用户登录
-// POST /api/login
+//
+// @Summary 用户登录
+// @Description 验证用户名密码，返回 JWT Token 和用户信息
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body model.LoginRequest true "登录请求"
+// @Success 200 {object} map[string]interface{} "登录成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "用户名或密码错误"
+// @Router /login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -22,6 +22,12 @@ jobs:
       - name: Install CGO dependencies
         run: sudo apt-get update && sudo apt-get install -y gcc
 
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Generate Swagger docs
+        run: swag init -g main.go -o docs --parseDependency --parseInternal
+
       - name: Build
         run: go build ./...
 

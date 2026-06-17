@@ -12,18 +12,32 @@ import (
 
 // ==================== 通知系统 ====================
 
-// ListNotifications 获取用户通知列表（未读优先）
-// GET /api/notifications
+// ListNotifications 获取用户通知列表（未读优先，支持分页）
+// GET /api/notifications?limit=20&offset=0
 func (h *Handler) ListNotifications(c *gin.Context) {
 	userID := c.GetString("userID")
 
 	// 惰性触发：检查并生成待处理通知
 	h.generatePendingNotifications(userID)
 
+	// 解析分页参数
+	limit, offset := parsePagination(c)
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	// 查询总数
+	var totalCount int64
+	h.DB.Model(&model.Notification{}).Where("user_id = ?", userID).Count(&totalCount)
+
 	var notifications []model.Notification
 	if err := h.DB.Where("user_id = ?", userID).
 		Order("CASE WHEN read_at IS NULL THEN 0 ELSE 1 END ASC, created_at DESC").
-		Limit(50).
+		Limit(limit).
+		Offset(offset).
 		Find(&notifications).Error; err != nil {
 		log.Printf("查询通知失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取通知失败"})
@@ -37,6 +51,9 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"data":          notifications,
 		"unread_count":  unreadCount,
+		"total":         totalCount,
+		"limit":         limit,
+		"offset":        offset,
 	})
 }
 

@@ -10,7 +10,7 @@ const GoodChild = defineComponent({
   name: 'GoodChild',
   setup() {
     return () => h('div', { class: 'good-child' }, '一切正常')
-  },
+  }
 })
 
 /** 渲染时抛出错误的子组件 */
@@ -27,12 +27,12 @@ function createFailingChild(errorMessage) {
         }
         return h('div', '不应显示')
       }
-    },
+    }
   })
 }
 
 /** 点击按钮后抛出错误的子组件 */
-function createClickFailChild(errorMessage) {
+function _createClickFailChild(errorMessage) {
   return defineComponent({
     name: 'ClickFailChild',
     setup() {
@@ -45,13 +45,17 @@ function createClickFailChild(errorMessage) {
               class: 'trigger-btn',
               onClick: () => {
                 shouldFail.value = true
-              },
+              }
             },
             '触发错误'
           ),
-          shouldFail.value ? (() => { throw new Error(errorMessage) })() : h('span', '等待触发'),
+          shouldFail.value
+            ? (() => {
+                throw new Error(errorMessage)
+              })()
+            : h('span', '等待触发')
         ])
-    },
+    }
   })
 }
 
@@ -68,8 +72,8 @@ describe('ErrorBoundary.vue', () => {
     it('子组件无错误时显示 slot 内容', () => {
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(GoodChild),
-        },
+          default: () => h(GoodChild)
+        }
       })
 
       expect(wrapper.find('.good-child').exists()).toBe(true)
@@ -80,8 +84,8 @@ describe('ErrorBoundary.vue', () => {
     it('slot 内容为普通文本时正确渲染', () => {
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: '<p class="test-text">Hello World</p>',
-        },
+          default: '<p class="test-text">Hello World</p>'
+        }
       })
 
       expect(wrapper.find('.test-text').exists()).toBe(true)
@@ -93,9 +97,9 @@ describe('ErrorBoundary.vue', () => {
         slots: {
           default: () => [
             h('span', { key: 'a', class: 'child-a' }, 'A'),
-            h('span', { key: 'b', class: 'child-b' }, 'B'),
-          ],
-        },
+            h('span', { key: 'b', class: 'child-b' }, 'B')
+          ]
+        }
       })
 
       expect(wrapper.findAll('.child-a, .child-b')).toHaveLength(2)
@@ -112,8 +116,8 @@ describe('ErrorBoundary.vue', () => {
       const FailingChild = createFailingChild('测试错误消息')
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(FailingChild),
-        },
+          default: () => h(FailingChild)
+        }
       })
 
       await nextTick()
@@ -130,8 +134,8 @@ describe('ErrorBoundary.vue', () => {
       const FailingChild = createFailingChild('某个错误')
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(FailingChild),
-        },
+          default: () => h(FailingChild)
+        }
       })
 
       await nextTick()
@@ -147,8 +151,8 @@ describe('ErrorBoundary.vue', () => {
       const FailingChild = createFailingChild('图标测试')
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(FailingChild),
-        },
+          default: () => h(FailingChild)
+        }
       })
 
       await nextTick()
@@ -167,13 +171,13 @@ describe('ErrorBoundary.vue', () => {
           return () => {
             throw {} // 没有 message 属性
           }
-        },
+        }
       })
 
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(FailingChild),
-        },
+          default: () => h(FailingChild)
+        }
       })
 
       await nextTick()
@@ -193,16 +197,16 @@ describe('ErrorBoundary.vue', () => {
           setup() {
             return () =>
               h(ErrorBoundary, null, {
-                default: () => h(FailingChild),
+                default: () => h(FailingChild)
               })
-          },
+          }
         }),
         {
           global: {
             config: {
-              errorHandler: parentHandler,
-            },
-          },
+              errorHandler: parentHandler
+            }
+          }
         }
       )
 
@@ -234,13 +238,13 @@ describe('ErrorBoundary.vue', () => {
             }
             return h('div', { class: 'recovered' }, '恢复正常')
           }
-        },
+        }
       })
 
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(ControllableChild),
-        },
+          default: () => h(ControllableChild)
+        }
       })
 
       await nextTick()
@@ -268,13 +272,13 @@ describe('ErrorBoundary.vue', () => {
           return () => {
             throw new Error('持续错误')
           }
-        },
+        }
       })
 
       const wrapper = mount(ErrorBoundary, {
         slots: {
-          default: () => h(AlwaysFailChild),
-        },
+          default: () => h(AlwaysFailChild)
+        }
       })
 
       await nextTick()
@@ -299,16 +303,13 @@ describe('ErrorBoundary.vue', () => {
       const FailingChild = createFailingChild('日志测试')
       mount(ErrorBoundary, {
         slots: {
-          default: () => h(FailingChild),
-        },
+          default: () => h(FailingChild)
+        }
       })
 
       await nextTick()
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[ErrorBoundary] 组件渲染错误:',
-        expect.any(Error)
-      )
+      expect(consoleSpy).toHaveBeenCalledWith('[ErrorBoundary] 组件渲染错误:', expect.any(Error))
     })
   })
 })

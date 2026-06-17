@@ -11,20 +11,20 @@ const steps = [
     target: '[data-onboarding="upload"]',
     title: '上传学习材料',
     description: '点击这里上传 PDF、文档或网页链接，AI 将自动分析并提取知识点、生成卡片和练习题。',
-    position: 'right',
+    position: 'right'
   },
   {
     target: '[data-onboarding="cards"]',
     title: '复习知识卡片',
     description: '系统自动生成的智能卡片，支持间隔重复复习（SM-2 算法），帮你高效记忆。还能搜索和导出 Anki。',
-    position: 'right',
+    position: 'right'
   },
   {
     target: '[data-onboarding="chat"]',
     title: 'AI 智能对话',
     description: '基于你的学习材料，与 AI 进行深度对话。支持工具调用，可以实时查询知识图谱和卡片。',
-    position: 'right',
-  },
+    position: 'right'
+  }
 ]
 
 const totalSteps = computed(() => steps.length)
@@ -82,6 +82,6 @@ export function useOnboarding() {
     prevStep,
     finishOnboarding,
     skipOnboarding,
-    resetOnboarding,
+    resetOnboarding
   }
 }

@@ -22,7 +22,17 @@ import (
 // ==================== 材料管理 ====================
 
 // UploadMaterial 上传学习材料
-// POST /api/materials
+//
+// @Summary 创建文本材料
+// @Description 创建一条文本或 URL 类型的学习材料
+// @Tags 材料管理
+// @Accept json
+// @Produce json
+// @Param request body model.UploadRequest true "上传请求"
+// @Security BearerAuth
+// @Success 201 {object} model.Material "创建成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Router /materials [post]
 func (h *Handler) UploadMaterial(c *gin.Context) {
 	userID := c.GetString("userID")
 
@@ -68,11 +78,23 @@ func (h *Handler) UploadMaterial(c *gin.Context) {
 		}()
 	}
 
+	// 异步更新学习目标进度（上传材料 +1）
+	go h.IncrementGoalProgress(userID, "upload_materials", 1)
+
 	c.JSON(http.StatusCreated, material)
 }
-
 // ListMaterials 获取用户的所有材料（支持分页 + 标签过滤）
-// GET /api/materials?limit=20&offset=0&tag=Go
+//
+// @Summary 材料列表
+// @Description 分页获取当前用户的学习材料列表，支持标签过滤
+// @Tags 材料管理
+// @Produce json
+// @Param limit query int false "每页条数（默认 20，上限 200）"
+// @Param offset query int false "偏移量（默认 0）"
+// @Param tag query string false "按标签过滤"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "材料列表"
+// @Router /materials [get]
 func (h *Handler) ListMaterials(c *gin.Context) {
 	userID := c.GetString("userID")
 	limit, offset := parsePagination(c)
@@ -88,7 +110,7 @@ func (h *Handler) ListMaterials(c *gin.Context) {
 	query.Count(&total)
 
 	var materials []model.Material
-	if err := query.Select("id, user_id, title, content_type, source_url, status, tags, analyzed_at, created_at, updated_at").
+	if err := query.Select("id, user_id, title, content_type, source_url, status, tags, is_public, share_code, analyzed_at, created_at, updated_at").
 		Order("created_at DESC").Limit(limit).Offset(offset).Find(&materials).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询材料失败"})
 		return
@@ -98,7 +120,16 @@ func (h *Handler) ListMaterials(c *gin.Context) {
 }
 
 // GetMaterial 获取单个材料详情
-// GET /api/materials/:id
+//
+// @Summary 材料详情
+// @Description 获取单个材料详情，含关联的知识卡片和练习题
+// @Tags 材料管理
+// @Produce json
+// @Param id path string true "材料 ID"
+// @Security BearerAuth
+// @Success 200 {object} model.Material "材料详情"
+// @Failure 404 {object} map[string]interface{} "材料不存在"
+// @Router /materials/{id} [get]
 func (h *Handler) GetMaterial(c *gin.Context) {
 	userID := c.GetString("userID")
 	id := c.Param("id")
@@ -116,7 +147,16 @@ func (h *Handler) GetMaterial(c *gin.Context) {
 }
 
 // DeleteMaterial 删除材料
-// DELETE /api/materials/:id
+//
+// @Summary 删除材料
+// @Description 删除材料及其关联的卡片、练习题和 RAG 向量数据
+// @Tags 材料管理
+// @Produce json
+// @Param id path string true "材料 ID"
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "删除成功"
+// @Failure 404 {object} map[string]interface{} "材料不存在"
+// @Router /materials/{id} [delete]
 func (h *Handler) DeleteMaterial(c *gin.Context) {
 	userID := c.GetString("userID")
 	id := c.Param("id")
@@ -155,7 +195,16 @@ func (h *Handler) DeleteMaterial(c *gin.Context) {
 }
 
 // AnalyzeMaterial 触发 Agent 并发分析材料
-// POST /api/materials/:id/analyze
+//
+// @Summary 触发 AI 分析
+// @Description 触发 4 个 Agent 并发分析材料（分析师/出题师/卡片师/图谱师），通过 WebSocket 推送进度
+// @Tags 材料管理
+// @Produce json
+// @Param id path string true "材料 ID"
+// @Security BearerAuth
+// @Success 202 {object} map[string]interface{} "分析已启动"
+// @Failure 404 {object} map[string]interface{} "材料不存在"
+// @Router /materials/{id}/analyze [post]
 func (h *Handler) AnalyzeMaterial(c *gin.Context) {
 	userID := c.GetString("userID")
 	id := c.Param("id")
@@ -479,7 +528,18 @@ func (h *Handler) BatchDeleteMaterials(c *gin.Context) {
 }
 
 // UploadFile 上传文件并提取文本内容
-// POST /api/materials/upload
+//
+// @Summary 上传文件材料
+// @Description 上传 PDF/DOCX/MD/TXT 文件（最大 20MB），自动提取文本内容
+// @Tags 材料管理
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "上传文件"
+// @Param title formData string false "材料标题"
+// @Security BearerAuth
+// @Success 201 {object} model.Material "上传成功"
+// @Failure 400 {object} map[string]interface{} "文件无效"
+// @Router /materials/upload [post]
 func (h *Handler) UploadFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -597,7 +657,14 @@ func (h *Handler) GetMaterialStatus(c *gin.Context) {
 }
 
 // GetTags 获取用户所有已用标签及计数
-// GET /api/tags
+//
+// @Summary 获取标签列表
+// @Description 聚合当前用户所有材料的标签及使用次数
+// @Tags 材料管理
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "标签列表"
+// @Router /tags [get]
 func (h *Handler) GetTags(c *gin.Context) {
 	userID := c.GetString("userID")
 

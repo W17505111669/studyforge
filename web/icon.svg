@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a5b4fc"/>
+      <stop offset="100%" style="stop-color:#818cf8"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Open book base -->
+  <path d="M256 360 L130 320 L130 160 L256 200 Z" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M256 360 L382 320 L382 160 L256 200 Z" fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="4" stroke-linejoin="round"/>
+  <!-- AI sparkle/neural dot -->
+  <circle cx="256" cy="155" r="22" fill="url(#glow)"/>
+  <line x1="256" y1="133" x2="256" y2="118" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="275" y1="144" x2="286" y2="133" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="237" y1="144" x2="226" y2="133" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Small sparkles -->
+  <circle cx="310" cy="128" r="5" fill="#c7d2fe"/>
+  <circle cx="202" cy="128" r="5" fill="#c7d2fe"/>
+  <circle cx="256" cy="105" r="4" fill="#e0e7ff"/>
+  <!-- Text lines on book -->
+  <line x1="165" y1="220" x2="230" y2="238" stroke="rgba(255,255,255,0.5)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="165" y1="245" x2="220" y2="260" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="165" y1="270" x2="225" y2="283" stroke="rgba(255,255,255,0.3)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="282" y1="238" x2="347" y2="220" stroke="rgba(255,255,255,0.5)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="292" y1="260" x2="347" y2="245" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="287" y1="283" x2="347" y2="270" stroke="rgba(255,255,255,0.3)" stroke-width="3" stroke-linecap="round"/>
+</svg>

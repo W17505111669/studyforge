@@ -3,7 +3,7 @@ import axios from 'axios'
 const api = axios.create({
   baseURL: '/api',
   timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json' }
 })
 
 // 请求拦截器：自动附加 JWT Token
@@ -39,7 +39,7 @@ export const uploadFile = (file, onProgress) => {
   formData.append('file', file)
   const config = {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 60000, // 大文件上传超时 60s
+    timeout: 60000 // 大文件上传超时 60s
   }
   if (typeof onProgress === 'function') {
     config.onUploadProgress = (progressEvent) => {
@@ -59,12 +59,41 @@ export const batchAnalyzeMaterials = (ids) => api.post('/materials/batch-analyze
 export const batchDeleteMaterials = (ids) => api.delete('/materials/batch', { data: { ids } })
 export const getTags = () => api.get('/tags')
 
+// ========== Market (材料市场) ==========
+export const toggleShare = (id) => api.put(`/materials/${id}/share`)
+export const listMarketMaterials = (params) => api.get('/market/materials', { params })
+export const previewMarketMaterial = (shareCode) => api.get(`/market/materials/${shareCode}`)
+export const collectMarketMaterial = (shareCode) => api.post(`/market/materials/${shareCode}/collect`)
+export const getMarketTags = () => api.get('/market/tags')
+
+// ========== Decks (卡片组/牌组) ==========
+export const listDecks = () => api.get('/decks')
+export const createDeck = (data) => api.post('/decks', data)
+export const getDeck = (id) => api.get(`/decks/${id}`)
+export const deleteDeck = (id) => api.delete(`/decks/${id}`)
+export const toggleDeckShare = (id) => api.put(`/decks/${id}/share`)
+export const listMarketDecks = (params) => api.get('/market/decks', { params })
+export const previewMarketDeck = (shareCode) => api.get(`/market/decks/${shareCode}`)
+export const collectMarketDeck = (shareCode) => api.post(`/market/decks/${shareCode}/collect`)
+export const getMarketDeckTags = () => api.get('/market/decks/tags')
+
 // ========== Cards ==========
 export const listCards = (params) => api.get('/cards', { params })
 export const getCard = (id) => api.get(`/cards/${id}`)
 export const reviewCard = (id, result) => api.post(`/cards/${id}/review`, { result })
 export const toggleBookmark = (id) => api.put(`/cards/${id}/bookmark`)
 export const updateCardNote = (id, note) => api.put(`/cards/${id}/note`, { note })
+export const getDueCards = (params) => api.get('/cards/due', { params })
+
+// ========== Images (卡片图片) ==========
+export const uploadImage = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post('/images/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000
+  })
+}
 
 // ========== Quizzes ==========
 export const listQuizzes = (params) => api.get('/quizzes', { params })
@@ -112,7 +141,7 @@ export function chatStream(message, materialId, onToken, onDone, onError, onTool
 
   fetch(`/api/chat/stream?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
-    signal: controller.signal,
+    signal: controller.signal
   })
     .then(async (response) => {
       if (!response.ok) {
@@ -161,13 +190,17 @@ export function chatStream(message, materialId, onToken, onDone, onError, onTool
             // 解析工具调用事件
             if (content.startsWith('[TOOL_CALL]')) {
               if (onToolEvent) {
-                try { onToolEvent({ type: 'tool_call', ...JSON.parse(content.slice(11)) }) } catch {}
+                try {
+                  onToolEvent({ type: 'tool_call', ...JSON.parse(content.slice(11)) })
+                } catch {}
               }
               continue
             }
             if (content.startsWith('[TOOL_RESULT]')) {
               if (onToolEvent) {
-                try { onToolEvent({ type: 'tool_result', ...JSON.parse(content.slice(13)) }) } catch {}
+                try {
+                  onToolEvent({ type: 'tool_result', ...JSON.parse(content.slice(13)) })
+                } catch {}
               }
               continue
             }
@@ -189,7 +222,16 @@ export function chatStream(message, materialId, onToken, onDone, onError, onTool
 }
 
 // ========== Search ==========
-export const globalSearch = (q) => api.get('/search', { params: { q } })
+export const globalSearch = (q, filters = {}) => {
+  const params = { q, ...filters }
+  // 清理空值参数
+  Object.keys(params).forEach((key) => {
+    if (params[key] === '' || params[key] === null || params[key] === undefined) {
+      delete params[key]
+    }
+  })
+  return api.get('/search', { params })
+}
 
 // ========== Graph ==========
 export const getKnowledgeGraph = (materialId) => api.get(`/graph/${materialId}`)
@@ -199,30 +241,143 @@ export const getAllGraphs = () => api.get('/graph/all')
 export const getUserStats = () => api.get('/stats')
 export const getCalendarHeatmap = (year) => api.get('/stats/calendar', { params: { year } })
 
+// ========== Export (数据导出) ==========
+export const exportDataPreview = (params) => api.get('/export/preview', { params })
+export const exportDataDownload = (params) => {
+  const token = localStorage.getItem('token')
+  const query = new URLSearchParams(params).toString()
+  return fetch(`/api/export/data?${query}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  }).then((res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return res.blob()
+  })
+}
+
 // ========== Achievements ==========
 export const getAchievements = () => api.get('/achievements')
 
 // ========== Recommendations ==========
 export const getRecommendations = () => api.get('/recommendations')
 
+// ========== Diagnosis (知识弱点诊断) ==========
+export const getDiagnosis = () => api.get('/diagnosis', { timeout: 60000 })
+
 // ========== Learning Path ==========
-export const getLearningPath = (force = false) => api.get('/learning-path', {
-  params: force ? { force: 'true' } : {},
-  timeout: 120000,
-})
+export const getLearningPath = (force = false) =>
+  api.get('/learning-path', {
+    params: force ? { force: 'true' } : {},
+    timeout: 120000
+  })
 
 // ========== Debate (多 Agent 辩论) ==========
 export const startDebate = (concept) => api.post('/debate', { concept }, { timeout: 120000 })
 
 // ========== Notifications ==========
-export const getNotifications = () => api.get('/notifications')
+export const getNotifications = (params) => api.get('/notifications', { params })
 export const getUnreadNotificationCount = () => api.get('/notifications/unread-count')
 export const readNotification = (id) => api.post(`/notifications/${id}/read`)
 export const readAllNotifications = () => api.post('/notifications/read-all')
+
+// ========== Pomodoro (番茄钟) ==========
+export const startPomodoro = (data) => api.post('/pomodoro/start', data)
+export const endPomodoro = (data) => api.post('/pomodoro/end', data)
+export const getPomodoroStats = () => api.get('/pomodoro/stats')
+
+// ========== Goals (学习目标) ==========
+export const listGoals = (status) => api.get('/goals', { params: status ? { status } : {} })
+export const getGoalProgress = () => api.get('/goals/progress')
+export const createGoal = (data) => api.post('/goals', data)
+export const updateGoal = (id, data) => api.put(`/goals/${id}`, data)
+export const deleteGoal = (id) => api.delete(`/goals/${id}`)
+
+// ========== Reports (学习报告) ==========
+export const getWeeklyReport = (date) => api.get('/reports/weekly', { params: date ? { date } : {} })
+export const getMonthlyReport = (month) => api.get('/reports/monthly', { params: month ? { month } : {} })
+
+// ========== Streaks (学习连续打卡) ==========
+export const getStreaks = () => api.get('/streaks')
+
+// ========== Leaderboard (学习排行榜) ==========
+export const getLeaderboard = (period) => api.get('/leaderboard', { params: { period } })
+export const getMyLeaderboardStats = (period) => api.get('/leaderboard/me', { params: { period } })
+
+// ========== Friends (好友系统) ==========
+export const listFriends = () => api.get('/friends')
+export const sendFriendRequest = (username) => api.post('/friends/request', { username })
+export const acceptFriendRequest = (id) => api.put(`/friends/request/${id}/accept`)
+export const rejectFriendRequest = (id) => api.delete(`/friends/request/${id}`)
+export const removeFriend = (id) => api.delete(`/friends/${id}`)
+export const getFriendRequests = () => api.get('/friends/requests')
+export const searchUsers = (q) => api.get('/friends/search', { params: { q } })
+export const getFriendCount = () => api.get('/friends/count')
+
+// ========== Daily Tasks (每日任务) ==========
+export const getDailyTasks = (date) => api.get('/daily-tasks', { params: date ? { date } : {} })
+export const createDailyTask = (data) => api.post('/daily-tasks', data)
+export const updateDailyTask = (id, data) => api.put(`/daily-tasks/${id}`, data)
+export const toggleDailyTask = (id) => api.put(`/daily-tasks/${id}/toggle`)
+export const deleteDailyTask = (id) => api.delete(`/daily-tasks/${id}`)
+
+// ========== Notes (知识笔记本) ==========
+export const listNotes = (params = {}) => api.get('/notes', { params })
+export const getNote = (id) => api.get(`/notes/${id}`)
+export const createNote = (data) => api.post('/notes', data)
+export const updateNote = (id, data) => api.put(`/notes/${id}`, data)
+export const deleteNote = (id) => api.delete(`/notes/${id}`)
+export const searchNotes = (q) => api.get('/notes/search', { params: { q } })
+export const listNoteFolders = () => api.get('/notes/folders')
+export const createNoteFolder = (data) => api.post('/notes/folders', data)
+export const updateNoteFolder = (id, data) => api.put(`/notes/folders/${id}`, data)
+export const deleteNoteFolder = (id) => api.delete(`/notes/folders/${id}`)
+
+// ========== Anki Import (Anki 导入) ==========
+export const importAnkiPreview = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post('/import/anki', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
+  })
+}
+export const importAnkiConfirm = (data) => api.post('/import/anki/confirm', data, { timeout: 60000 })
+
+// ========== Study Groups (学习小组) ==========
+export const listGroups = (filter) => api.get('/groups', { params: filter ? { filter } : {} })
+export const getGroup = (id) => api.get(`/groups/${id}`)
+export const createGroup = (data) => api.post('/groups', data)
+export const updateGroup = (id, data) => api.put(`/groups/${id}`, data)
+export const deleteGroup = (id) => api.delete(`/groups/${id}`)
+export const joinGroup = (id) => api.post(`/groups/${id}/join`)
+export const leaveGroup = (id) => api.post(`/groups/${id}/leave`)
+export const getGroupMembers = (id) => api.get(`/groups/${id}/members`)
+export const getGroupProgress = (id) => api.get(`/groups/${id}/progress`)
+export const getGroupGoals = (id) => api.get(`/groups/${id}/goals`)
+export const createGroupGoal = (id, data) => api.post(`/groups/${id}/goals`, data)
+export const deleteGroupGoal = (id, goalId) => api.delete(`/groups/${id}/goals/${goalId}`)
+
+// ========== Exam (模拟考试) ==========
+export const generateExam = (data) => api.post('/exam/generate', data, { timeout: 120000 })
+export const submitExam = (id, answers) => api.post(`/exams/${id}/submit`, { answers }, { timeout: 30000 })
+export const listExams = () => api.get('/exams')
+export const getExam = (id) => api.get(`/exams/${id}`)
+
+// ========== Explain (AI 概念解释器) ==========
+export const explainConcept = (data) => api.post('/explain', data, { timeout: 60000 })
+export const getExplainHistory = (params = {}) => api.get('/explain/history', { params })
+export const deleteExplainCache = (id) => api.delete(`/explain/${id}`)
+
+// ========== Insights (知识洞察) ==========
+export const getConnections = () => api.get('/insights/connections')
 
 // ========== Dashboard ==========
 export const getMetrics = () => api.get('/dashboard/metrics')
 export const getDailyActivity = () => api.get('/dashboard/activity')
 export const listTraces = () => api.get('/dashboard/traces')
+
+// ========== Admin (性能监控) ==========
+export const getAPIMetrics = (rangeHours = 24) =>
+  api.get('/admin/metrics', { params: { range: rangeHours } })
+export const getDBStats = () => api.get('/admin/db-stats')
 
 export default api

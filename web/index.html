@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>StudyForge Pro - AI 智能学习平台</title>
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -17,10 +17,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="StudyForge" />
+    <script type="module" crossorigin src="/assets/index-BUOfAfHr.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-BQnMtvsg.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BuNjOcPL.css">
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
     <script>
       // Service Worker 注册（仅生产环境）
       if ('serviceWorker' in navigator) {

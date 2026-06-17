@@ -167,7 +167,7 @@ describe('Toast.vue', () => {
       const { confirm } = useConfirm()
       wrapper = mount(Toast)
 
-      const promise = confirm('确认删除？')
+      const _promise = confirm('确认删除？')
       await flushPromises()
       await nextTick()
 
@@ -192,7 +192,7 @@ describe('Toast.vue', () => {
       const overlay = document.body.querySelector('.fixed.inset-0')
       const buttons = overlay.querySelectorAll('button')
       expect(buttons).toHaveLength(2)
-      expect(buttons[1].textContent).toBe('确定')
+      expect(buttons[1].textContent.trim()).toBe('确定')
       buttons[1].click()
 
       const result = await promise
@@ -209,7 +209,7 @@ describe('Toast.vue', () => {
 
       const overlay = document.body.querySelector('.fixed.inset-0')
       const buttons = overlay.querySelectorAll('button')
-      expect(buttons[0].textContent).toBe('取消')
+      expect(buttons[0].textContent.trim()).toBe('取消')
       buttons[0].click()
 
       const result = await promise

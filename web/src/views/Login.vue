@@ -1,9 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
+  <div
+    class="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4"
+  >
     <div class="w-full max-w-md">
       <!-- Logo -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-2xl mb-4 shadow-lg shadow-primary-500/30">
+        <div
+          class="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-2xl mb-4 shadow-lg shadow-primary-500/30"
+        >
           <span class="text-2xl font-bold text-white">SF</span>
         </div>
         <h1 class="text-3xl font-bold text-white">StudyForge Pro</h1>
@@ -16,7 +20,7 @@
           {{ isLogin ? '欢迎回来' : '创建账户' }}
         </h2>
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
+        <form class="space-y-4" @submit.prevent="handleSubmit">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">用户名</label>
             <input
@@ -60,17 +64,14 @@
             :disabled="loading"
             class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ loading ? '处理中...' : (isLogin ? '登 录' : '注 册') }}
+            {{ loading ? '处理中...' : isLogin ? '登 录' : '注 册' }}
           </button>
         </form>
 
         <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
           <span v-if="isLogin">还没有账户？</span>
           <span v-else>已有账户？</span>
-          <button
-            @click="toggleMode"
-            class="text-primary-600 hover:text-primary-700 font-medium ml-1"
-          >
+          <button class="text-primary-600 hover:text-primary-700 font-medium ml-1" @click="toggleMode">
             {{ isLogin ? '立即注册' : '去登录' }}
           </button>
         </div>
@@ -93,7 +94,7 @@ const error = ref('')
 const form = reactive({
   username: '',
   password: '',
-  email: '',
+  email: ''
 })
 
 function toggleMode() {
